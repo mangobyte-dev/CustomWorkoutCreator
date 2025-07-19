@@ -6,30 +6,96 @@
 //
 
 import Foundation
+import SwiftData
 
-struct Workout: Identifiable, Codable {
+@Model
+class Workout {
     var id = UUID()
     var name: String = "Untitled Workout"
     var dateAndTime: Date = Date()
     var totalDuration: TimeInterval = 0
-    var intervals: [Interval] = []
+    @Relationship(deleteRule: .cascade) var intervals: [Interval] = []
+    
+    init(id: UUID = UUID(), name: String = "Untitled Workout", dateAndTime: Date = Date(), totalDuration: TimeInterval = 0, intervals: [Interval] = []) {
+        self.id = id
+        self.name = name
+        self.dateAndTime = dateAndTime
+        self.totalDuration = totalDuration
+        self.intervals = intervals
+    }
 }
 
-struct Interval: Identifiable, Codable {
+@Model
+class Interval {
     var id = UUID()
     var name: String? // Optional name like "Warmup", "Main Set", etc.
-    var exercises: [Exercise] = []
+    @Relationship(deleteRule: .cascade) var exercises: [Exercise] = []
     var rounds: Int = 1
     var restBetweenRounds: Int? // Optional rest between rounds
+    
+    init(id: UUID = UUID(), name: String? = nil, exercises: [Exercise] = [], rounds: Int = 1, restBetweenRounds: Int? = nil) {
+        self.id = id
+        self.name = name
+        self.exercises = exercises
+        self.rounds = rounds
+        self.restBetweenRounds = restBetweenRounds
+    }
 }
 
 enum TrainingMethod: Codable {
     case standard(reps: Int)
     case restPause(targetTotal: Int, repRange: String? = nil)
     case timed(seconds: Int)
+    
+    // Custom Codable implementation for SwiftData compatibility
+    enum CodingKeys: String, CodingKey {
+        case type
+        case reps
+        case targetTotal
+        case repRange
+        case seconds
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        
+        switch type {
+        case "standard":
+            let reps = try container.decode(Int.self, forKey: .reps)
+            self = .standard(reps: reps)
+        case "restPause":
+            let targetTotal = try container.decode(Int.self, forKey: .targetTotal)
+            let repRange = try container.decodeIfPresent(String.self, forKey: .repRange)
+            self = .restPause(targetTotal: targetTotal, repRange: repRange)
+        case "timed":
+            let seconds = try container.decode(Int.self, forKey: .seconds)
+            self = .timed(seconds: seconds)
+        default:
+            throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unknown training method type")
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        switch self {
+        case let .standard(reps):
+            try container.encode("standard", forKey: .type)
+            try container.encode(reps, forKey: .reps)
+        case let .restPause(targetTotal, repRange):
+            try container.encode("restPause", forKey: .type)
+            try container.encode(targetTotal, forKey: .targetTotal)
+            try container.encodeIfPresent(repRange, forKey: .repRange)
+        case let .timed(seconds):
+            try container.encode("timed", forKey: .type)
+            try container.encode(seconds, forKey: .seconds)
+        }
+    }
 }
 
-struct Exercise: Identifiable, Codable {
+@Model
+class Exercise {
     var id = UUID()
     var name: String
     var trainingMethod: TrainingMethod
@@ -37,6 +103,16 @@ struct Exercise: Identifiable, Codable {
     var restAfter: Int? // Optional - rest after this exercise in seconds
     var tempo: Tempo? // Optional - movement tempo/cadence
     var notes: String? // Optional - additional form cues, instructions
+    
+    init(id: UUID = UUID(), name: String, trainingMethod: TrainingMethod, weight: Double? = nil, restAfter: Int? = nil, tempo: Tempo? = nil, notes: String? = nil) {
+        self.id = id
+        self.name = name
+        self.trainingMethod = trainingMethod
+        self.weight = weight
+        self.restAfter = restAfter
+        self.tempo = tempo
+        self.notes = notes
+    }
 }
 
 /// Tempo controls the speed of each phase of an exercise movement
@@ -73,7 +149,7 @@ struct Tempo: Codable {
 
 // Convenience extensions
 extension Workout {
-    static var example: Workout {
+    static func makeExample() -> Workout {
         Workout(
             name: "Full Body Circuit",
             intervals: [

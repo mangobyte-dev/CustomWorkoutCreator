@@ -3,7 +3,7 @@
 ## 🎯 Project Goal
 Create a dead-simple, bare-minimum MVP of a custom workout app that lets users create workouts in the structures they prefer. The app should bend to users' will, not force them into rigid structures.
 
-## 📅 Last Updated: July 16, 2025
+## 📅 Last Updated: July 19, 2025
 
 ## ✅ Completed Features
 
@@ -26,18 +26,37 @@ Create a dead-simple, bare-minimum MVP of a custom workout app that lets users c
   - Codable serialization
   - Default values and empty states
 
+### 3. SwiftData Persistence Layer
+- [x] **Converted all models to @Model classes** for SwiftData compatibility
+- [x] **TrainingMethod enum** made SwiftData-compatible with custom Codable implementation
+- [x] **WorkoutStore created** with @Observable (not ObservableObject) following CLAUDE.md
+- [x] **CRUD operations implemented**:
+  - `fetchAllWorkouts()` - Sorted by date (newest first)
+  - `addWorkout()` - Insert and save
+  - `deleteWorkout()` - Delete with cascade
+  - `updateWorkout()` - Save changes
+- [x] **SwiftData configuration** in app entry point
+- [x] **Cascade delete rules** for proper data cleanup
+
+### 4. Base App Structure
+- [x] **Tab-based navigation** with 3 tabs (Home, Workouts, Settings)
+- [x] **Minimal views** ready for UI implementation
+- [x] **App builds and runs** successfully with persistence
+
 ## 🚧 Current State
 
 ### What's Working
 - Data models compile and pass all tests
 - Flexible enough to handle user's example: "1 circuit of pushups and dips for 4 rounds, then step ups for 5 rounds, then glute bridges for 5 rounds"
 - Test infrastructure is set up and running
+- SwiftData persistence layer fully implemented
+- Tab navigation structure in place
+- App builds and runs without errors
 
 ### What's Missing
-- No UI implementation yet
-- No persistence layer
-- No workout timer/tracking
-- No exercise library
+- UI implementation for creating/editing workouts
+- Workout timer/tracking during exercise
+- Exercise library/templates
 
 ## 🎨 Architecture Decisions
 
@@ -45,6 +64,8 @@ Create a dead-simple, bare-minimum MVP of a custom workout app that lets users c
 2. **Flexible data model** - TrainingMethod enum allows different exercise types without optional field explosion
 3. **Swift Testing** - Modern testing framework for cleaner syntax
 4. **MVP Focus** - Avoiding premature optimization, focusing on core workout creation
+5. **SwiftData over Core Data** - Modern persistence with less boilerplate
+6. **@Observable WorkoutStore** - Not ObservableObject, following performance best practices
 
 ## 📝 Example Usage
 
@@ -69,9 +90,9 @@ let squats = Exercise(
 ## 🚀 Next Steps
 
 ### Immediate Priority
-1. [ ] Create basic SwiftUI views for workout creation
-2. [ ] Implement workout builder interface
-3. [ ] Add ability to save/load workouts
+1. [ ] Create AddWorkoutView for new workouts
+2. [ ] Implement workout list in WorkoutsView
+3. [ ] Add interval and exercise editing capabilities
 
 ### Future Considerations
 - [ ] Workout timer/tracking during exercise
@@ -85,6 +106,9 @@ let squats = Exercise(
 2. **Swift Testing** is much cleaner than XCTest for new projects
 3. **Tempo notation** using "X" for explosive movements is industry standard
 4. **76% test coverage** is good enough for MVP - don't over-test
+5. **SwiftData enums** with associated values need custom Codable implementation
+6. **@Observable + SwiftData** is the modern way - no ViewModels needed
+7. **case let syntax** is cleaner for pattern matching in Swift
 
 ## 🐛 Known Issues
 - Swift concurrency warnings when SwiftUI is imported in tests (actor isolation)

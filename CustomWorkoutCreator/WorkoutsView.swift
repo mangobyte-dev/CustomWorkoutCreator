@@ -14,9 +14,9 @@ struct WorkoutsView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                Text("list")
+                Text("workout lists")
             }
-            .navigationTitle("Workouts")
+            .navigationTitle("workouts")
             .navigationBarTitleDisplayMode(.large)
         }
     }

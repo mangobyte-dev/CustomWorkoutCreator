@@ -13,7 +13,7 @@ struct SettingsView: View {
         NavigationStack {
             Text("settings")
             }
-            .navigationTitle("Settings")
+            .navigationTitle("settings")
             .navigationBarTitleDisplayMode(.large)
         }
 }

@@ -13,6 +13,7 @@ CustomWorkoutCreator is a SwiftUI-based iOS/macOS application for creating and m
 - **Use static data structures with KeyPaths** instead of runtime closures
 - **Avoid repeated allocations** - Cache and reuse expensive objects
 - **Pre-compute all static configurations** at compile time
+- **Always use `case let` syntax**
 
 ### State Management Principles
 - **NO ViewModels** - Use @State/@Binding/@Environment only

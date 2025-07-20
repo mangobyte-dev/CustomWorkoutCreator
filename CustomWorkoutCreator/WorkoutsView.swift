@@ -24,10 +24,7 @@ struct WorkoutsView: View {
                             WorkoutRow(workout: workout)
                         }
                         .onDelete { indices in
-                            for index in indices {
-                                workoutStore.deleteWorkout(workouts[index])
-                            }
-                            loadWorkouts()
+                            deleteWorkouts(at: indices)
                         }
                     }
                 }
@@ -59,6 +56,15 @@ struct WorkoutsView: View {
     
     private func loadWorkouts() {
         workouts = workoutStore.fetchAllWorkouts()
+    }
+    
+    private func deleteWorkouts(at indices: IndexSet) {
+        for index in indices {
+            if workouts.indices.contains(index) {
+                workoutStore.deleteWorkout(workouts[index])
+            }
+        }
+        loadWorkouts()
     }
 }
 
@@ -95,11 +101,5 @@ struct WorkoutRow: View {
 
 
 #Preview {
-    do {
-        let container = try ModelContainer(for: Workout.self)
-        return WorkoutsView()
-            .environment(WorkoutStore(modelContainer: container))
-    } catch {
-        fatalError("Failed to create model container for preview")
-    }
+    WorkoutsView()
 }

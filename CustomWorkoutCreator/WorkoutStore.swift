@@ -11,7 +11,7 @@ import SwiftData
 @Observable
 class WorkoutStore {
     private let modelContainer: ModelContainer
-    private let modelContext: ModelContext
+    let modelContext: ModelContext
     
     init(modelContainer: ModelContainer) {
         self.modelContainer = modelContainer
@@ -41,6 +41,7 @@ class WorkoutStore {
     
     func deleteWorkout(_ workout: Workout) {
         modelContext.delete(workout)
+        
         do {
             try modelContext.save()
         } catch {

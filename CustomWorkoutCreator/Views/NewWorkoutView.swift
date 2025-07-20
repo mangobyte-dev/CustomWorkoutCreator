@@ -366,11 +366,5 @@ struct EditableExerciseRow: View {
 }
 
 #Preview {
-    do {
-        let container = try ModelContainer(for: Workout.self)
-        return NewWorkoutView()
-            .environment(WorkoutStore(modelContainer: container))
-    } catch {
-        fatalError("Failed to create model container for preview")
-    }
+    NewWorkoutView()
 }

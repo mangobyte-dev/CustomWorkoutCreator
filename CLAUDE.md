@@ -83,6 +83,68 @@ CustomWorkoutCreator is a SwiftUI-based iOS/macOS application for creating and m
 - **Consistent naming conventions** - Clear, descriptive names
 - **Document performance-critical code** - Explain optimizations
 
+## SwiftData Preview Best Practices
+
+### Preview Configuration Principles
+- **Always use in-memory containers** - `ModelConfiguration(isStoredInMemoryOnly: true)`
+- **Disable autosave in previews** - `container.mainContext.autosaveEnabled = false`
+- **Use PreviewModifier for iOS 18.0+** - Cleaner, cached preview contexts
+- **Avoid enums with associated values** - Use decomposed storage pattern instead
+
+### SwiftData Model Principles
+- **Decompose complex enums** - Store enum data as separate properties
+- **Maintain API compatibility** - Use computed properties for enum reconstruction
+- **Test delete operations thoroughly** - Preview crashes may be intermittent
+- **Consider simple enums** - Raw value enums (String/Int) work reliably
+
+### Preview Implementation Pattern
+```swift
+// iOS 18.0+ Recommended Approach
+@MainActor
+struct SampleDataPreviewModifier: PreviewModifier {
+    static func makeSharedContext() throws -> ModelContainer {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Model.self, configurations: config)
+        container.mainContext.autosaveEnabled = false
+        // Add sample data here
+        return container
+    }
+    
+    func body(content: Content, context: ModelContainer) -> some View {
+        content
+            .modelContainer(context)
+            .environment(WorkoutStore(modelContainer: context))
+    }
+}
+
+#Preview(traits: .modifier(SampleDataPreviewModifier())) {
+    ContentView()
+}
+```
+
+### Enum Decomposition Pattern
+```swift
+// Instead of storing enum directly
+@Model
+class Exercise {
+    // ❌ Avoid: Can crash on delete in previews
+    var trainingMethod: TrainingMethod
+}
+
+// ✅ Prefer: Decomposed storage
+@Model
+class Exercise {
+    private var methodType: String = "standard"
+    private var minReps: Int = 10
+    private var maxReps: Int = 10
+    
+    var trainingMethod: TrainingMethod {
+        get { /* Reconstruct enum */ }
+        set { /* Decompose enum */ }
+    }
+}
+```
+
 ## Summary
 
 These practices result in:
@@ -91,5 +153,7 @@ These practices result in:
 - Consistent 60fps performance
 - Responsive user interactions
 - Maintainable, scalable codebase
+- **Stable SwiftData previews without crashes**
+- **Reliable CRUD operations in development**
 
 Always prioritize user experience and app performance. Profile regularly and optimize based on actual measurements, not assumptions.

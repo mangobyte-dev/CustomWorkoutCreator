@@ -21,7 +21,11 @@ struct WorkoutsView: View {
                 } else {
                     List {
                         ForEach(workouts) { workout in
-                            WorkoutRow(workout: workout)
+                            NavigationLink {
+                                WorkoutDetailView(workout: workout)
+                            } label: {
+                                WorkoutRow(workout: workout)
+                            }
                         }
                         .onDelete { indices in
                             deleteWorkouts(at: indices)
@@ -41,7 +45,7 @@ struct WorkoutsView: View {
                 }
             }
             .sheet(isPresented: $showingNewWorkout) {
-                NewWorkoutView()
+                WorkoutFormView(workout: nil)
             }
             .onAppear {
                 loadWorkouts()

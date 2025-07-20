@@ -49,7 +49,8 @@ class WorkoutStore {
         }
     }
     
-    func updateWorkout() {
+    func updateWorkout(_ workout: Workout) {
+        // The workout is already tracked by SwiftData, just save the context
         do {
             try modelContext.save()
         } catch {

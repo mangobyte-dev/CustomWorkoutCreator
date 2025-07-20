@@ -3,54 +3,73 @@
 ## Core Principle
 Dead simple CRUD implementation using vanilla SwiftUI. No polish, just functionality.
 
-## Phase 1: CREATE (Workout Creation) - UPDATED SINGLE SCREEN APPROACH
+## Phase 1: CREATE (Workout Creation) ✅ COMPLETE!
 
 ### 1.1 Basic Workout Creation Flow
 ```
 WorkoutsView (+ button) → NewWorkoutView (all-in-one) → Save
 ```
 
-### 1.2 NewWorkoutView - Single Screen
+### 1.2 NewWorkoutView - Single Screen ✅
 - **Form with sections:**
-  - TextField for workout name
+  - TextField for workout name ✅
   - **Intervals Section:**
-    - List of intervals (expandable/collapsible)
+    - List of intervals (expandable/collapsible) ✅
     - Each interval shows:
-      - Name (inline editable)
-      - Rounds & rest (inline steppers)
-      - List of exercises
-      - "Add Exercise" button
-    - "Add Interval" button at bottom
-  - Save button (enabled only when has name + intervals with exercises)
+      - Name (inline editable) ✅
+      - Rounds & rest (inline steppers) ✅
+      - Rest after interval ✅
+      - List of exercises ✅
+      - "Add Exercise" button ✅
+    - "Add Interval" button at bottom ✅
+  - Save button (enabled only when has name + intervals with exercises) ✅
 
-### 1.3 Inline Interval Editing
+### 1.3 Inline Interval Editing ✅
 - **Each interval row contains:**
-  - TextField for name (optional, placeholder "Interval 1")
-  - Stepper for rounds (1-10)
-  - Stepper for rest between rounds (0-300s)
-  - Exercises list below
-  - "Add Exercise" button
+  - TextField for name (optional, placeholder "Interval 1") ✅
+  - Stepper for rounds (1-10) ✅
+  - Stepper for rest between rounds (0-300s) ✅
+  - Stepper for rest after interval (0-300s) ✅
+  - Exercises list below ✅
+  - "Add Exercise" button ✅
 
-### 1.4 Inline Exercise Editing
+### 1.4 Inline Exercise Editing ✅
 - **Each exercise row contains:**
-  - TextField for exercise name
-  - Picker for training method (segmented control)
+  - TextField for exercise name ✅
+  - Effort level stepper (1-10) ✅
+  - Picker for training method (segmented control) ✅
   - Based on method:
-    - Standard: Stepper for reps
-    - Timed: Stepper for seconds
-    - Rest-pause: TextField for target
-  - Swipe to delete
+    - Standard: Min/Max rep range steppers ✅
+    - Timed: Stepper for seconds ✅
+    - Rest-pause: Target total field + Min/Max rep range ✅
+  - Swipe to delete ✅
 
-## Phase 2: READ (Workout List)
+### 1.5 Save Functionality ✅
+- Creates Workout object with all data ✅
+- Calculates estimated duration ✅
+- Saves to SwiftData ✅
+- Dismisses view and returns to list ✅
+- Shows new workout immediately ✅
 
-### 2.1 WorkoutsView Enhancement
+## Phase 2: READ (Workout List) ✅ PARTIALLY COMPLETE
+
+### 2.1 WorkoutsView Enhancement ✅
 - **List of workouts showing:**
-  - Workout name
-  - Date created
-  - Number of intervals
-  - Total exercises count
-- NavigationLink to each workout (leads to Update view)
-- Empty state: "No workouts. Tap + to create one."
+  - Workout name ✅
+  - Number of intervals ✅
+  - Total duration (formatted MM:SS) ✅
+- Swipe to delete ✅
+- Empty state: "No workouts. Tap + to create one." ✅
+- Auto-refresh after creating workout ✅
+
+### 2.2 WorkoutDetailView (TODO)
+- NavigationLink from list to detail view
+- Show full workout structure:
+  - All intervals with names
+  - All exercises with details
+  - Rep ranges, effort levels
+  - All rest periods
+- Read-only view of workout
 
 ## Phase 3: UPDATE (Edit Workout)
 

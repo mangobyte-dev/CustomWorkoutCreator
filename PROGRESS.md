@@ -10,12 +10,14 @@ Create a dead-simple, bare-minimum MVP of a custom workout app that lets users c
 ### 1. Data Models (DataModels.swift)
 - [x] **Flexible workout structure** supporting multiple training styles
 - [x] **TrainingMethod enum** with associated values:
-  - `.standard(reps: Int)` - Traditional sets x reps
-  - `.restPause(targetTotal: Int, repRange: String?)` - Calisthenics cluster training
+  - `.standard(minReps: Int, maxReps: Int)` - Rep ranges for progressive overload
+  - `.restPause(targetTotal: Int, minReps: Int, maxReps: Int)` - Calisthenics cluster training with rep ranges
   - `.timed(seconds: Int)` - Duration-based exercises
 - [x] **Tempo support** for controlled movements (eccentric-pause-concentric notation)
 - [x] **Nested structure**: Workout → Intervals → Exercises
 - [x] **All models are Codable** for save/load functionality
+- [x] **Exercise effort level** (1-10 scale) for intensity tracking
+- [x] **Rest after interval** property for custom rest blocks between intervals
 
 ### 2. Testing Infrastructure
 - [x] Swift Testing framework (modern approach)
@@ -43,81 +45,137 @@ Create a dead-simple, bare-minimum MVP of a custom workout app that lets users c
 - [x] **Minimal views** ready for UI implementation
 - [x] **App builds and runs** successfully with persistence
 
+### 5. UI Implementation - CREATE (Phase 1 Complete!)
+- [x] **Single-screen workout creation** - Everything happens in one view for efficiency
+- [x] **NewWorkoutView** with inline editing:
+  - Workout name field
+  - Add/remove intervals
+  - Expandable/collapsible intervals
+  - Inline interval name editing
+  - Rounds and rest steppers
+  - Rest after interval stepper
+- [x] **Inline exercise editing**:
+  - Exercise name field
+  - Effort level (1-10) stepper
+  - Segmented control for training method
+  - Rep range steppers for standard exercises
+  - Rep range for rest-pause
+  - Time stepper for timed exercises
+  - Swipe to delete exercises
+- [x] **Save functionality**:
+  - Creates workout with calculated duration
+  - Saves to SwiftData
+  - Returns to workout list
+- [x] **WorkoutsView** showing saved workouts:
+  - Empty state with call to action
+  - List of workouts with name, intervals, duration
+  - Swipe to delete
+  - Auto-refresh after creating workout
+
 ## 🚧 Current State
 
 ### What's Working
-- Data models compile and pass all tests
-- Flexible enough to handle user's example: "1 circuit of pushups and dips for 4 rounds, then step ups for 5 rounds, then glute bridges for 5 rounds"
-- Test infrastructure is set up and running
-- SwiftData persistence layer fully implemented
-- Tab navigation structure in place
-- App builds and runs without errors
+- Full CREATE functionality for workouts
+- Flexible data model supporting rep ranges and effort levels
+- Single-screen UI for fast workout creation
+- Persistence with SwiftData
+- Basic workout list with delete functionality
+- Duration calculation based on exercise types
 
 ### What's Missing
-- UI implementation for creating/editing workouts
+- READ - Detailed workout view (tap to see full workout)
+- UPDATE - Edit existing workouts
 - Workout timer/tracking during exercise
 - Exercise library/templates
+- Home view implementation
+- Settings view implementation
 
 ## 🎨 Architecture Decisions
 
-1. **No ViewModels** - Following CLAUDE.md guidelines, using @Observable and SwiftUI's built-in state management
-2. **Flexible data model** - TrainingMethod enum allows different exercise types without optional field explosion
-3. **Swift Testing** - Modern testing framework for cleaner syntax
-4. **MVP Focus** - Avoiding premature optimization, focusing on core workout creation
-5. **SwiftData over Core Data** - Modern persistence with less boilerplate
-6. **@Observable WorkoutStore** - Not ObservableObject, following performance best practices
+1. **Single-screen creation** - No sheets or navigation for workout building
+2. **Inline editing everywhere** - Direct manipulation without popups
+3. **Rep ranges instead of single values** - Better for progressive overload
+4. **Effort tracking** - Simple 1-10 scale for each exercise
+5. **Rest after interval** - Clean solution for rest blocks between intervals
+6. **No ViewModels** - Following CLAUDE.md guidelines
+7. **Vanilla SwiftUI only** - No custom design system for MVP
 
 ## 📝 Example Usage
 
 ```swift
-// Standard workout
-let pushups = Exercise(name: "Push-ups", trainingMethod: .standard(reps: 15))
+// Standard workout with rep ranges
+let pushups = Exercise(
+    name: "Push-ups", 
+    trainingMethod: .standard(minReps: 12, maxReps: 15),
+    effort: 7
+)
 
-// Rest-pause (calisthenics style)
-let pullups = Exercise(name: "Pull-ups", trainingMethod: .restPause(targetTotal: 50, repRange: "8-12RM"))
+// Rest-pause with rep ranges
+let pullups = Exercise(
+    name: "Pull-ups", 
+    trainingMethod: .restPause(targetTotal: 50, minReps: 8, maxReps: 12),
+    effort: 9
+)
 
 // Timed exercise
-let plank = Exercise(name: "Plank", trainingMethod: .timed(seconds: 60))
+let plank = Exercise(
+    name: "Plank", 
+    trainingMethod: .timed(seconds: 60),
+    effort: 8
+)
 
-// With tempo
-let squats = Exercise(
-    name: "Squats", 
-    trainingMethod: .standard(reps: 10),
-    tempo: Tempo(eccentric: 3, pause: 1, concentric: 1) // 3-1-1 tempo
+// Interval with rest after
+let interval = Interval(
+    name: "Upper Body",
+    exercises: [pushups, pullups],
+    rounds: 3,
+    restBetweenRounds: 60,
+    restAfterInterval: 120  // 2 minute rest before next interval
 )
 ```
 
 ## 🚀 Next Steps
 
-### Immediate Priority
-1. [ ] Create AddWorkoutView for new workouts
-2. [ ] Implement workout list in WorkoutsView
-3. [ ] Add interval and exercise editing capabilities
+### Immediate Priority (Phase 2 - READ)
+1. [ ] Create WorkoutDetailView to show full workout structure
+2. [ ] Navigation from list to detail view
+3. [ ] Display all intervals, exercises, and rest periods
+
+### Phase 3 - UPDATE
+1. [ ] Reuse NewWorkoutView for editing
+2. [ ] Pre-populate with existing data
+3. [ ] Update save logic to modify existing workout
+
+### Phase 4 - DELETE
+1. [x] Swipe to delete in list (already done)
+2. [ ] Delete button in edit mode
 
 ### Future Considerations
 - [ ] Workout timer/tracking during exercise
 - [ ] Exercise library/templates
 - [ ] Progress tracking
 - [ ] Export workouts
+- [ ] Workout duplication
 
 ## 💡 Key Insights from Development
 
-1. **Rest-pause training** required rethinking the traditional sets/reps model
-2. **Swift Testing** is much cleaner than XCTest for new projects
-3. **Tempo notation** using "X" for explosive movements is industry standard
-4. **76% test coverage** is good enough for MVP - don't over-test
-5. **SwiftData enums** with associated values need custom Codable implementation
-6. **@Observable + SwiftData** is the modern way - no ViewModels needed
-7. **case let syntax** is cleaner for pattern matching in Swift
+1. **Single-screen UI** dramatically improves workflow efficiency
+2. **Rep ranges** are essential for progressive training
+3. **Inline editing** reduces cognitive load
+4. **Rest after interval** is cleaner than complex ordering systems
+5. **Effort tracking** adds valuable context without complexity
+6. **Duration estimates** help users plan their time
+7. **SwiftData** makes persistence surprisingly simple
 
 ## 🐛 Known Issues
-- Swift concurrency warnings when SwiftUI is imported in tests (actor isolation)
-- No current bugs in functionality
+- SettingsView has a syntax error (not fixed as it's not priority)
+- Duration calculation is an estimate (3 seconds per rep assumption)
 
 ## 📚 References
 - CLAUDE.md - Performance guidelines and architecture rules
-- DataModels.swift - Core data structures
-- CustomWorkoutCreatorTests.swift - Test examples and API usage
+- DataModels.swift - Core data structures with rep ranges
+- NewWorkoutView.swift - Single-screen workout creation
+- scratchpad.md - CRUD implementation plan
 
 ---
 

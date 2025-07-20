@@ -100,6 +100,6 @@ struct WorkoutRow: View {
 
 
 
-#Preview {
+#Preview(traits: .sampleData) {
     WorkoutsView()
 }

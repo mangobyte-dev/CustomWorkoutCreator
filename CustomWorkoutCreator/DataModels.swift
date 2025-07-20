@@ -8,19 +8,20 @@
 import Foundation
 import SwiftData
 
+// MARK: - Core Models
+
 @Model
 class Workout {
     var id = UUID()
     var name: String = "Untitled Workout"
-    var dateAndTime: Date = Date()
+    var dateAndTime = Date()
     var totalDuration: TimeInterval = 0
     @Relationship(deleteRule: .cascade) var intervals: [Interval] = []
     
-    init(id: UUID = UUID(), name: String = "Untitled Workout", dateAndTime: Date = Date(), totalDuration: TimeInterval = 0, intervals: [Interval] = []) {
+    init(id: UUID = UUID(), name: String = "Untitled Workout", dateAndTime: Date = Date(), intervals: [Interval] = []) {
         self.id = id
         self.name = name
         self.dateAndTime = dateAndTime
-        self.totalDuration = totalDuration
         self.intervals = intervals
     }
 }
@@ -28,10 +29,10 @@ class Workout {
 @Model
 class Interval {
     var id = UUID()
-    var name: String? // Optional name like "Warmup", "Main Set", etc.
+    var name: String? // Optional name for the interval (e.g., "Warmup", "Main Set", "Cooldown")
     @Relationship(deleteRule: .cascade) var exercises: [Exercise] = []
-    var rounds: Int = 1
-    var restBetweenRounds: Int? // Optional rest between rounds
+    var rounds = 1 // How many times to repeat this interval
+    var restBetweenRounds: Int? // Optional rest between rounds in seconds
     var restAfterInterval: Int? // Optional rest after completing all rounds
     
     init(id: UUID = UUID(), name: String? = nil, exercises: [Exercise] = [], rounds: Int = 1, restBetweenRounds: Int? = nil, restAfterInterval: Int? = nil) {
@@ -44,19 +45,15 @@ class Interval {
     }
 }
 
+// MARK: - TrainingMethod Enum (kept for API compatibility)
+
 enum TrainingMethod: Codable {
     case standard(minReps: Int, maxReps: Int)
-    case restPause(targetTotal: Int, minReps: Int, maxReps: Int)
+    case restPause(targetTotal: Int, minReps: Int = 5, maxReps: Int = 10)
     case timed(seconds: Int)
     
-    // Custom Codable implementation for SwiftData compatibility
     enum CodingKeys: String, CodingKey {
-        case type
-        case reps
-        case minReps
-        case maxReps
-        case targetTotal
-        case seconds
+        case type, reps, minReps, maxReps, targetTotal, seconds
     }
     
     init(from decoder: Decoder) throws {
@@ -110,7 +107,46 @@ enum TrainingMethod: Codable {
 class Exercise {
     var id = UUID()
     var name: String
-    var trainingMethod: TrainingMethod
+    
+    // Store enum data as separate properties to avoid SwiftData crash
+    private var methodType: String = "standard"
+    private var minReps: Int = 10
+    private var maxReps: Int = 10
+    private var targetTotal: Int = 0
+    private var seconds: Int = 30
+    
+    // Computed property to maintain API compatibility
+    var trainingMethod: TrainingMethod {
+        get {
+            switch methodType {
+            case "standard":
+                return .standard(minReps: minReps, maxReps: maxReps)
+            case "restPause":
+                return .restPause(targetTotal: targetTotal, minReps: minReps, maxReps: maxReps)
+            case "timed":
+                return .timed(seconds: seconds)
+            default:
+                return .standard(minReps: 10, maxReps: 10)
+            }
+        }
+        set {
+            switch newValue {
+            case let .standard(min, max):
+                methodType = "standard"
+                minReps = min
+                maxReps = max
+            case let .restPause(total, min, max):
+                methodType = "restPause"
+                targetTotal = total
+                minReps = min
+                maxReps = max
+            case let .timed(sec):
+                methodType = "timed"
+                seconds = sec
+            }
+        }
+    }
+    
     var effort: Int = 7 // Expected effort level 1-10
     var weight: Double? // Optional - for weighted exercises
     var restAfter: Int? // Optional - rest after this exercise in seconds
@@ -129,25 +165,17 @@ class Exercise {
     }
 }
 
-/// Tempo controls the speed of each phase of an exercise movement
-///
-/// **Eccentric**: The "negative" or muscle lengthening phase
-/// - Push-up: lowering down (chest to floor)
-/// - Pull-up: lowering down (arms extending)
-/// - Squat: lowering down
-/// - Bicep curl: lowering weight down
-///
-/// **Concentric**: The "positive" or muscle shortening phase
-/// - Push-up: pushing up
-/// - Pull-up: pulling up
-/// - Squat: standing up
-/// - Bicep curl: curling weight up
+// MARK: - Value Types (Codable structs used within models)
+
+/// Represents the tempo/cadence of an exercise movement
+/// Format: Eccentric-Pause-Concentric (e.g., 3-1-2 means 3 seconds down, 1 second pause, 2 seconds up)
 struct Tempo: Codable {
-    var eccentric: Int // Seconds for muscle lengthening phase (usually the "lowering")
-    var pause: Int // Seconds to pause (usually at bottom/stretched position)
-    var concentric: Int // Seconds for muscle shortening phase (usually the "lifting")
+    let eccentric: Int  // Muscle lengthening phase (lowering)
+    let pause: Int      // Pause at the bottom/stretched position
+    let concentric: Int // Muscle shortening phase (lifting) - 0 means explosive
     
     // Common tempo patterns
+    static let normal = Tempo(eccentric: 1, pause: 0, concentric: 1) // 1-0-1
     static let controlled = Tempo(eccentric: 2, pause: 0, concentric: 1) // 2-0-1
     static let slow = Tempo(eccentric: 3, pause: 1, concentric: 2) // 3-1-2
     static let explosive = Tempo(eccentric: 2, pause: 0, concentric: 0) // 2-0-X (X = explosive)

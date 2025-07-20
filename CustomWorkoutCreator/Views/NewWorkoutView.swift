@@ -365,6 +365,6 @@ struct EditableExerciseRow: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     NewWorkoutView()
 }

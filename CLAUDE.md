@@ -70,6 +70,7 @@ CustomWorkoutCreator is a SwiftUI-based iOS/macOS application for creating and m
 - **Don't create formatters in view body** - Cache as static properties
 - **Don't perform I/O in view updates** - Use async tasks
 - **Don't ignore view update cycles** - Understand when views re-render
+- **Never use shadows effects or modifiers**
 
 ### Testing & Debugging Principles
 - **Use Self._printChanges() to debug re-renders**

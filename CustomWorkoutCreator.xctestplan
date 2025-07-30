@@ -1,0 +1,30 @@
+{
+  "configurations" : [
+    {
+      "id" : "214B5001-A499-4488-835C-28CF0F35F795",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:CustomWorkoutCreator.xcodeproj",
+      "identifier" : "8B350D6E2E279F9900D93F3F",
+      "name" : "CustomWorkoutCreator"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:CustomWorkoutCreator.xcodeproj",
+        "identifier" : "8B350D872E27B84200D93F3F",
+        "name" : "CustomWorkoutCreatorTests"
+      }
+    }
+  ],
+  "version" : 1
+}

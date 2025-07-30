@@ -11,7 +11,7 @@ import SwiftData
 // MARK: - Core Models
 
 @Model
-class Workout {
+class Workout: Hashable, Comparable {
     var id = UUID()
     var name: String = "Untitled Workout"
     var dateAndTime = Date()
@@ -24,10 +24,33 @@ class Workout {
         self.dateAndTime = dateAndTime
         self.intervals = intervals
     }
+    
+    // MARK: - Hashable
+    // Hash only the id for performance - SwiftUI uses this for identity
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    // MARK: - Equatable
+    // Full equality check for detecting actual changes to minimize SwiftUI redraws
+    // We compare all value properties and check intervals count for structural changes
+    static func == (lhs: Workout, rhs: Workout) -> Bool {
+        lhs.id == rhs.id &&
+        lhs.name == rhs.name &&
+        lhs.dateAndTime == rhs.dateAndTime &&
+        lhs.totalDuration == rhs.totalDuration &&
+        lhs.intervals.count == rhs.intervals.count
+    }
+    
+    // MARK: - Comparable
+    // Sort by dateAndTime - most recent first
+    static func < (lhs: Workout, rhs: Workout) -> Bool {
+        lhs.dateAndTime > rhs.dateAndTime
+    }
 }
 
 @Model
-class Interval {
+class Interval: Hashable, Comparable {
     var id = UUID()
     var name: String? // Optional name for the interval (e.g., "Warmup", "Main Set", "Cooldown")
     @Relationship(deleteRule: .cascade) var exercises: [Exercise] = []
@@ -42,6 +65,39 @@ class Interval {
         self.rounds = rounds
         self.restBetweenRounds = restBetweenRounds
         self.restAfterInterval = restAfterInterval
+    }
+    
+    // MARK: - Hashable
+    // Hash only the id for performance - SwiftUI uses this for identity
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    // MARK: - Equatable
+    // Full equality check for detecting actual changes to minimize SwiftUI redraws
+    // We compare all value properties and check exercises count for structural changes
+    static func == (lhs: Interval, rhs: Interval) -> Bool {
+        lhs.id == rhs.id &&
+        lhs.name == rhs.name &&
+        lhs.rounds == rhs.rounds &&
+        lhs.restBetweenRounds == rhs.restBetweenRounds &&
+        lhs.restAfterInterval == rhs.restAfterInterval &&
+        lhs.exercises.count == rhs.exercises.count
+    }
+    
+    // MARK: - Comparable
+    // Sort by name (if present), then by id for stable ordering
+    static func < (lhs: Interval, rhs: Interval) -> Bool {
+        switch (lhs.name, rhs.name) {
+        case let (lhsName?, rhsName?):
+            return lhsName < rhsName
+        case (nil, _?):
+            return false // nil names come after named intervals
+        case (_?, nil):
+            return true // named intervals come before nil names
+        case (nil, nil):
+            return lhs.id.uuidString < rhs.id.uuidString // stable ordering by id
+        }
     }
 }
 
@@ -104,7 +160,7 @@ enum TrainingMethod: Codable {
 }
 
 @Model
-class Exercise {
+class Exercise: Hashable, Comparable {
     var id = UUID()
     var name: String
     
@@ -163,13 +219,46 @@ class Exercise {
         self.tempo = tempo
         self.notes = notes
     }
+    
+    // MARK: - Hashable
+    // Hash only the id for performance - SwiftUI uses this for identity
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    // MARK: - Equatable
+    // Full equality check for detecting actual changes to minimize SwiftUI redraws
+    // We compare all value properties including decomposed enum values
+    static func == (lhs: Exercise, rhs: Exercise) -> Bool {
+        lhs.id == rhs.id &&
+        lhs.name == rhs.name &&
+        lhs.methodType == rhs.methodType &&
+        lhs.minReps == rhs.minReps &&
+        lhs.maxReps == rhs.maxReps &&
+        lhs.targetTotal == rhs.targetTotal &&
+        lhs.seconds == rhs.seconds &&
+        lhs.effort == rhs.effort &&
+        lhs.weight == rhs.weight &&
+        lhs.restAfter == rhs.restAfter &&
+        lhs.tempo == rhs.tempo &&
+        lhs.notes == rhs.notes
+    }
+    
+    // MARK: - Comparable
+    // Sort by effort (higher effort first), then by name
+    static func < (lhs: Exercise, rhs: Exercise) -> Bool {
+        if lhs.effort != rhs.effort {
+            return lhs.effort > rhs.effort // Higher effort first
+        }
+        return lhs.name < rhs.name // Alphabetical by name
+    }
 }
 
 // MARK: - Value Types (Codable structs used within models)
 
 /// Represents the tempo/cadence of an exercise movement
 /// Format: Eccentric-Pause-Concentric (e.g., 3-1-2 means 3 seconds down, 1 second pause, 2 seconds up)
-struct Tempo: Codable {
+struct Tempo: Codable, Hashable, Equatable {
     let eccentric: Int  // Muscle lengthening phase (lowering)
     let pause: Int      // Pause at the bottom/stretched position
     let concentric: Int // Muscle shortening phase (lifting) - 0 means explosive

@@ -153,7 +153,6 @@ struct SampleDataPreviewModifier: PreviewModifier {
     func body(content: Content, context: ModelContainer) -> some View {
         content
             .modelContainer(context)
-            .environment(WorkoutStore(modelContainer: context))
     }
 }
 

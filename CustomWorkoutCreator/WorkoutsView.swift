@@ -9,9 +9,9 @@ import SwiftUI
 import SwiftData
 
 struct WorkoutsView: View {
-    @Environment(WorkoutStore.self) private var workoutStore
+    @Query(sort: \Workout.dateAndTime, order: .reverse) private var workouts: [Workout]
+    @Environment(\.modelContext) private var modelContext
     @State private var showingNewWorkout = false
-    @State private var workouts: [Workout] = []
     
     var body: some View {
         NavigationStack {
@@ -47,28 +47,15 @@ struct WorkoutsView: View {
             .sheet(isPresented: $showingNewWorkout) {
                 WorkoutFormView(workout: nil)
             }
-            .onAppear {
-                loadWorkouts()
-            }
-            .onChange(of: showingNewWorkout) { _, isShowing in
-                if !isShowing {
-                    loadWorkouts()
-                }
-            }
         }
-    }
-    
-    private func loadWorkouts() {
-        workouts = workoutStore.fetchAllWorkouts()
     }
     
     private func deleteWorkouts(at indices: IndexSet) {
         for index in indices {
             if workouts.indices.contains(index) {
-                workoutStore.deleteWorkout(workouts[index])
+                modelContext.delete(workouts[index])
             }
         }
-        loadWorkouts()
     }
 }
 

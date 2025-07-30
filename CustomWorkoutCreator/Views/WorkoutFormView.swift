@@ -10,7 +10,7 @@ import SwiftData
 
 struct WorkoutFormView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(WorkoutStore.self) private var workoutStore
+    @Environment(\.modelContext) private var modelContext
     
     let workout: Workout?
     
@@ -72,14 +72,13 @@ struct WorkoutFormView: View {
         if let existingWorkout = workout {
             existingWorkout.name = workoutName
             existingWorkout.intervals = intervals
-            workoutStore.updateWorkout(existingWorkout)
         } else {
             let newWorkout = Workout(
                 name: workoutName,
                 dateAndTime: Date(),
                 intervals: intervals
             )
-            workoutStore.addWorkout(newWorkout)
+            modelContext.insert(newWorkout)
         }
         dismiss()
     }

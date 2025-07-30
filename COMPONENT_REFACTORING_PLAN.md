@@ -15,8 +15,28 @@
    - Cached formatters (NumberFormatter, DateComponentsFormatter)
    - No shadow effects (per user requirement)
 
+3. **SectionHeader Component (Phase 1, Step 1.1, Substep 1.1.2)**
+   - Implemented with ViewBuilder for trailing content
+   - Pre-computes uppercased title string
+   - Matches Form section header appearance
+   - Supports optional subtitle
+
+4. **Row Component (Phase 1, Step 1.1, Substep 1.1.3)**
+   - Implemented with ViewBuilder for all slots
+   - Factory methods for common patterns (LabelRow, FieldRow, ToggleRow, StepperRow, ButtonRow)
+   - RowPosition enum for proper corner radius rendering
+   - Fixed corner radius implementation to use UnevenRoundedRectangle
+   - Equatable conformance for minimal redraws
+
+5. **Expandable Component (Phase 1, Step 1.1, Substep 1.1.4)**
+   - Implemented with tap-to-expand functionality
+   - Animated chevron indicator
+   - Changed from @Binding to internal @State for proper list animations
+   - Smooth expand/collapse animations
+   - Equatable conformance for efficient updates
+
 ### 🚧 Current Position
-Phase 1, Step 1.1, Substep 1.1.2 - Ready to implement SectionHeader component
+Phase 1, Step 1.1, Substep 1.1.5 - Ready to implement ActionButton component
 
 ## Key Learnings from Documentation
 
@@ -110,10 +130,10 @@ struct ActionButton: View {
 
 #### Step 1.1: Core Component Implementation
 - ✅ **Substep 1.1.1**: Create constants enums for all components
-- 🔄 **Substep 1.1.2**: Implement SectionHeader with ViewBuilder
-- **Substep 1.1.3**: Implement Row with ViewBuilder and factory methods
-- **Substep 1.1.4**: Implement Expandable with tap interaction
-- **Substep 1.1.5**: Implement ActionButton with style variants
+- ✅ **Substep 1.1.2**: Implement SectionHeader with ViewBuilder
+- ✅ **Substep 1.1.3**: Implement Row with ViewBuilder and factory methods
+- ✅ **Substep 1.1.4**: Implement Expandable with tap interaction
+- 🔄 **Substep 1.1.5**: Implement ActionButton with style variants
 
 #### Step 1.2: Component Optimization
 - **Substep 1.2.1**: Add Equatable conformance to all components
@@ -218,14 +238,37 @@ struct ActionButton: View {
 - ✅ No memory leaks or retain cycles
 - ✅ All tests passing
 
+## Implementation Details and Learnings
+
+### Row Component Corner Radius Fix
+- Initial implementation used `.clipShape(RoundedRectangle)` which caused all corners to be rounded
+- Fixed by using `UnevenRoundedRectangle` with specific corner radii based on RowPosition
+- This ensures proper visual grouping when rows are stacked with 1pt spacing
+
+### Expandable Component Binding Change
+- Originally designed with `@Binding var isExpanded` for external control
+- Changed to internal `@State private var isExpanded` with optional `initiallyExpanded` parameter
+- This change was necessary for proper animations in list contexts
+- External binding would cause animation conflicts when used in ForEach loops
+
+### Performance Wins
+- All components pre-compute display strings in initializers
+- ViewBuilder used throughout for lazy evaluation
+- Equatable conformance enables efficient diffing
+- No runtime closures or allocations in view bodies
+- Formatters cached in ComponentConstants
+
 ## Files to Reference
 
 - `/CLAUDE.md` - Performance guidelines
 - `/PROGRESS.md` - Project state and principles
 - `/REFACTORING_PLAN.md` - Original refactoring plan
 - `/Components/ComponentConstants.swift` - Pre-computed constants
+- `/Components/SectionHeader.swift` - Section header implementation
+- `/Components/Row.swift` - Row component with factory methods
+- `/Components/Expandable.swift` - Expandable container
 - `/Users/developer/Downloads/swiftui-list-guide-3.md` - Technical guide
 
 ---
 
-*This plan captures the current state and provides a clear path forward for the ScrollView + LazyVStack refactoring.*
+*This plan captures the current state and provides a clear path forward for the ScrollView + LazyVStack refactoring. Last updated: July 30, 2025*

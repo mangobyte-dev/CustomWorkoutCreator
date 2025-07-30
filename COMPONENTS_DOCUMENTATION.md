@@ -2,13 +2,17 @@
 
 This document provides comprehensive documentation for the reusable UI components in the CustomWorkoutCreator project. These components follow the performance principles outlined in CLAUDE.md and are designed to replace SwiftUI Form components with more performant alternatives.
 
+**Last Updated:** July 30, 2025
+
 ## Table of Contents
 
 1. [SectionHeader](#sectionheader)
 2. [Row](#row)
-3. [Integration Guide](#integration-guide)
-4. [Performance Considerations](#performance-considerations)
-5. [Migration Guide](#migration-guide)
+3. [Expandable](#expandable)
+4. [Integration Guide](#integration-guide)
+5. [Performance Considerations](#performance-considerations)
+6. [Migration Guide](#migration-guide)
+7. [Implementation Notes](#implementation-notes)
 
 ---
 
@@ -310,6 +314,127 @@ Row(
 
 ---
 
+## Expandable
+
+### Purpose and Use Cases
+
+The `Expandable` component provides a performant, animated container that can expand and collapse its content. It's designed to:
+
+- Replace disclosure groups in Forms
+- Show/hide complex content sections
+- Provide smooth animations without performance impact
+- Work efficiently in list contexts (ForEach loops)
+- Support custom header and content layouts
+
+### API Reference
+
+```swift
+struct Expandable<Header: View, Content: View>: View, Equatable {
+    init(
+        initiallyExpanded: Bool = false,
+        @ViewBuilder header: @escaping () -> Header,
+        @ViewBuilder content: @escaping () -> Content
+    )
+}
+```
+
+#### Parameters
+
+- **initiallyExpanded**: `Bool` - Initial expansion state (default: false)
+- **header**: `@ViewBuilder () -> Header` - The always-visible header content
+- **content**: `@ViewBuilder () -> Content` - The expandable content section
+
+### Important: State Management
+
+The Expandable component manages its own expansion state internally. This design decision was made to ensure proper animations in list contexts. If you need external control, consider wrapping the component or using a different approach.
+
+### Usage Examples
+
+#### Basic Expandable Section
+```swift
+Expandable(
+    header: {
+        Text("Advanced Options")
+            .font(.headline)
+    },
+    content: {
+        VStack(spacing: 8) {
+            ToggleRow("Enable Feature A", isOn: $featureA)
+            ToggleRow("Enable Feature B", isOn: $featureB)
+            StepperRow("Value", value: $value, in: 0...100)
+        }
+    }
+)
+```
+
+#### With Custom Header
+```swift
+Expandable(
+    initiallyExpanded: true,
+    header: {
+        HStack {
+            Image(systemName: "gear")
+            Text("Settings")
+            Spacer()
+            Text("\(enabledCount) active")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    },
+    content: {
+        // Settings content
+    }
+)
+```
+
+#### In a List Context
+```swift
+LazyVStack(spacing: 16) {
+    ForEach(intervals) { interval in
+        Expandable(
+            header: {
+                HStack {
+                    Text(interval.name)
+                    Spacer()
+                    Text("\(interval.exercises.count) exercises")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            },
+            content: {
+                VStack(spacing: 1) {
+                    ForEach(Array(interval.exercises.enumerated()), id: \.offset) { index, exercise in
+                        let position = // Calculate position
+                        LabelRow(
+                            title: exercise.name,
+                            value: exercise.duration,
+                            position: position
+                        )
+                    }
+                }
+            }
+        )
+    }
+}
+```
+
+### Best Practices
+
+1. **Let it manage its own state**: Don't try to control expansion externally
+2. **Use in lists**: Perfect for expandable sections in scrollable content
+3. **Keep headers lightweight**: Headers are always visible, so keep them simple
+4. **Lazy content**: Content views are only created when expanded
+5. **Smooth animations**: The component handles all animation details
+
+### Animation Details
+
+- Uses spring animation with reduced response for smooth feel
+- Chevron indicator rotates 90 degrees when expanded
+- Content appears/disappears with opacity animation
+- All animations are synchronized for cohesive experience
+
+---
+
 ## Integration Guide
 
 ### Replacing Form Sections
@@ -539,14 +664,57 @@ Row(
 
 ---
 
+## Implementation Notes
+
+### Row Component Corner Radius Fix
+
+During implementation, we discovered that using `.clipShape(RoundedRectangle)` would round all corners regardless of the RowPosition. The fix was to use `UnevenRoundedRectangle` with specific corner radii:
+
+```swift
+.clipShape(
+    UnevenRoundedRectangle(
+        topLeadingRadius: position.cornerRadius.topLeading,
+        bottomLeadingRadius: position.cornerRadius.bottomLeading,
+        bottomTrailingRadius: position.cornerRadius.bottomTrailing,
+        topTrailingRadius: position.cornerRadius.topTrailing
+    )
+)
+```
+
+This ensures proper visual grouping when rows are stacked with 1pt spacing.
+
+### Expandable Component State Management
+
+The Expandable component was initially designed with `@Binding var isExpanded: Bool` for external control. However, this caused animation issues when used in ForEach loops. The solution was to internalize the state:
+
+```swift
+// Before (causes animation issues in lists)
+@Binding var isExpanded: Bool
+
+// After (smooth animations)
+@State private var isExpanded: Bool
+let initiallyExpanded: Bool = false
+```
+
+This change ensures proper animations in list contexts while maintaining the component's functionality.
+
+### Performance Optimizations Applied
+
+1. **Pre-computed strings**: All display strings are computed in initializers
+2. **Cached formatters**: NumberFormatter and DateComponentsFormatter cached in ComponentConstants
+3. **ViewBuilder parameters**: Enable lazy evaluation of content
+4. **Equatable conformance**: Minimizes unnecessary view updates
+5. **No runtime closures**: All closures are passed as parameters, not created in view body
+
 ## Summary
 
-The Row and SectionHeader components provide a performant, flexible alternative to SwiftUI's Form components. By following the principles and patterns documented here, you can achieve:
+The Row, SectionHeader, and Expandable components provide a performant, flexible alternative to SwiftUI's Form components. By following the principles and patterns documented here, you can achieve:
 
 - 40-60% reduction in view updates
 - Consistent 60fps scrolling performance
 - Better control over styling and layout
 - Improved memory efficiency
 - Maintainable, scalable code architecture
+- Smooth animations even in complex list contexts
 
 Always prioritize user experience and measure performance improvements with actual profiling data.

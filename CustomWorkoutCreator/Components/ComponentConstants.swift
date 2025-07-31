@@ -136,23 +136,56 @@ enum ComponentConstants {
     
     // MARK: - ActionButton Constants
     enum ActionButton {
-        // Common Padding & Sizing
-        static let horizontalPadding: CGFloat = 20
-        static let verticalPadding: CGFloat = 12
-        static let minHeight: CGFloat = 44
-        static let cornerRadius: CGFloat = 10
+        // Size Variants
+        enum Small {
+            static let horizontalPadding: CGFloat = 16
+            static let verticalPadding: CGFloat = 8
+            static let minHeight: CGFloat = 36
+            static let cornerRadius: CGFloat = 8
+            static let iconSize: CGFloat = 14
+            static let font: Font = .footnote.weight(.medium)
+        }
+        
+        enum Medium {
+            static let horizontalPadding: CGFloat = 20
+            static let verticalPadding: CGFloat = 12
+            static let minHeight: CGFloat = 44
+            static let cornerRadius: CGFloat = 10
+            static let iconSize: CGFloat = 18
+            static let font: Font = .body.weight(.medium)
+        }
+        
+        enum Large {
+            static let horizontalPadding: CGFloat = 24
+            static let verticalPadding: CGFloat = 16
+            static let minHeight: CGFloat = 52
+            static let cornerRadius: CGFloat = 12
+            static let iconSize: CGFloat = 22
+            static let font: Font = .title3.weight(.medium)
+        }
+        
+        // Common Constants (defaults to medium)
+        static let horizontalPadding: CGFloat = Medium.horizontalPadding
+        static let verticalPadding: CGFloat = Medium.verticalPadding
+        static let minHeight: CGFloat = Medium.minHeight
+        static let cornerRadius: CGFloat = Medium.cornerRadius
         static let borderWidth: CGFloat = 2
-        static let iconSize: CGFloat = 18
+        static let iconSize: CGFloat = Medium.iconSize
         static let iconSpacing: CGFloat = 8
         
         // Typography
-        static let labelFont: Font = .body.weight(.medium)
+        static let labelFont: Font = Medium.font
         static let compactLabelFont: Font = .footnote.weight(.medium)
         
         // Animation
         static let pressAnimationScale: CGFloat = 0.95
         static let pressAnimationDuration: Double = 0.1
         static let disabledOpacity: Double = 0.6
+        
+        // Refined Animation Constants
+        static let hapticStyle: UIImpactFeedbackGenerator.FeedbackStyle = .light
+        static let brightnessDelta: Double = -0.05
+        static let linkBrightnessDelta: Double = 0.0
         
         // Primary Style Colors
         enum Primary {
@@ -167,6 +200,8 @@ enum ComponentConstants {
             static let foregroundColor: Color = .primary
             static let borderColor: Color = Color(UIColor.separator)
             static let pressedBackgroundColor: Color = Color(UIColor.tertiarySystemFill)
+            static let pressedForegroundColor: Color = .primary
+            static let pressedBorderColor: Color = Color(UIColor.opaqueSeparator)
         }
         
         // Destructive Style Colors
@@ -182,6 +217,8 @@ enum ComponentConstants {
             static let foregroundColor: Color = .accentColor
             static let borderColor: Color = .accentColor
             static let pressedBackgroundColor: Color = Color.accentColor.opacity(0.1)
+            static let pressedForegroundColor: Color = Color.accentColor.opacity(0.7)
+            static let pressedBorderColor: Color = Color.accentColor.opacity(0.7)
         }
         
         // Link Style Colors
@@ -215,6 +252,7 @@ enum ComponentConstants {
     
     // MARK: - Global Layout Constants
     enum Layout {
+        static let cornerRadius: CGFloat = 12
         static let defaultCornerRadius: CGFloat = 12
         static let smallCornerRadius: CGFloat = 8
         static let largeCornerRadius: CGFloat = 16

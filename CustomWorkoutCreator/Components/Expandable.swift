@@ -125,12 +125,12 @@ struct Expandable<Header: View, Content: View>: View, Equatable {
 // MARK: - Custom Button Style
 
 /// Custom button style that removes default button styling and visual feedback
-private struct ExpandableButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
+private struct ExpandableButtonStyle: SwiftUI.ButtonStyle {
+    func makeBody(configuration: SwiftUI.ButtonStyle.Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
             .animation(
-                .easeInOut(duration: 0.1),
+                Animation.easeInOut(duration: 0.1),
                 value: configuration.isPressed
             )
     }

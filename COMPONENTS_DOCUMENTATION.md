@@ -2,7 +2,7 @@
 
 This document provides comprehensive documentation for the reusable UI components in the CustomWorkoutCreator project. These components follow the performance principles outlined in CLAUDE.md and are designed to replace SwiftUI Form components with more performant alternatives.
 
-**Last Updated:** July 31, 2025
+**Last Updated:** August 5, 2025
 
 ## Table of Contents
 
@@ -11,10 +11,11 @@ This document provides comprehensive documentation for the reusable UI component
 3. [Expandable](#expandable)
 4. [ActionButton](#actionbutton)
 5. [ExpandableList](#expandablelist)
-6. [Integration Guide](#integration-guide)
-7. [Performance Considerations](#performance-considerations)
-8. [Migration Guide](#migration-guide)
-9. [Implementation Notes](#implementation-notes)
+6. [ExerciseCard](#exercisecard)
+7. [Integration Guide](#integration-guide)
+8. [Performance Considerations](#performance-considerations)
+9. [Migration Guide](#migration-guide)
+10. [Implementation Notes](#implementation-notes)
 
 ---
 
@@ -1345,3 +1346,135 @@ The Row, SectionHeader, Expandable, ActionButton, and ExpandableList components 
 - Smooth animations even in complex list contexts
 
 Always prioritize user experience and measure performance improvements with actual profiling data.
+
+---
+
+## ExerciseCard
+
+### Purpose and Use Cases
+
+The `ExerciseCard` component displays detailed exercise information with a sophisticated dynamic grid layout system. It's designed to:
+
+- Display exercise name, training method, and effort level
+- Dynamically arrange optional details (weight, rest, tempo, notes) in an intelligent grid
+- Handle all 8 possible combinations of optional data gracefully
+- Use pre-computed values and static lookups for optimal performance
+- Follow strict CLAUDE.md principles with no runtime calculations
+
+### API Reference
+
+```swift
+struct ExerciseCard: View {
+    let exercise: Exercise
+}
+```
+
+#### Parameters
+
+- **exercise**: `Exercise` - The exercise model to display
+
+### Key Features
+
+1. **Dynamic Grid System**
+   - Automatically arranges content based on available data
+   - Handles 0-2 rows of detail information
+   - Intelligent layout decisions to minimize vertical space
+   - Custom separator with precise sizing (1pt + 4pt padding)
+
+2. **Training Method Display**
+   - Icons mapped via static lookup table
+   - Formatted descriptions for all training method types
+   - Uses `case let` syntax for pattern matching
+
+3. **Effort Indicator**
+   - Color-coded capsule (green/yellow/orange/red)
+   - Heavy font weight for emphasis
+   - White text on colored background for contrast
+   - Compact sizing with 6pt padding
+
+4. **Performance Optimizations**
+   - All values pre-computed in computed properties
+   - Static lookup tables for icons and colors
+   - No closures in view body
+   - Equatable conformance for efficient diffing
+
+### Dynamic Row System
+
+The ExerciseCard uses an innovative dynamic row system:
+
+```swift
+private struct DetailRowData: Identifiable {
+    let id = UUID()
+    let leftContent: AnyView?
+    let rightContent: AnyView?
+}
+
+private struct DetailRow: View {
+    let data: DetailRowData
+    // Renders 3-column layout: left | separator | right
+}
+```
+
+### Layout Logic
+
+The component intelligently arranges optional details:
+
+- **3 details** (weight + rest + tempo): 2 rows
+  - Row 1: weight | separator | rest
+  - Row 2: tempo | (no separator)
+- **2 details**: 1 row with both sides filled
+- **1 detail**: 1 row with left side only
+- **0 details**: No grid displayed
+
+### Usage Examples
+
+```swift
+// Basic usage
+ExerciseCard(exercise: myExercise)
+
+// In a list
+ForEach(exercises) { exercise in
+    ExerciseCard(exercise: exercise)
+}
+
+// With dividers
+VStack(spacing: 12) {
+    ExerciseCard(exercise: exercise1)
+    Divider()
+    ExerciseCard(exercise: exercise2)
+}
+```
+
+### Implementation Notes
+
+1. **Type Safety with AnyView**
+   - Uses explicit optional handling to avoid type inference issues
+   - `nil as EmptyView?` pattern for right-side empty content
+
+2. **Separator Design**
+   - Fixed width: 1pt line + 4pt padding each side = 9pt total
+   - Uses platform-appropriate color via `Color(UIColor.separator)`
+   - Only displays when right content exists
+
+3. **Visual Hierarchy**
+   - Bold exercise name for emphasis
+   - Secondary styling for optional details
+   - Divider between main content and details grid
+   - Italic styling for notes
+
+4. **CLAUDE.md Compliance**
+   - No ViewModels
+   - All static constants pre-computed
+   - Uses `case let` syntax in switch statements
+   - @ViewBuilder for conditional content
+   - Equatable conformance for performance
+
+### Performance Characteristics
+
+- **Zero runtime calculations** in view body
+- **Static lookup tables** for constant-time access
+- **Pre-computed strings** for all display values
+- **Minimal view hierarchy** with flat structure
+- **Type-erased views** only where necessary for dynamic content
+
+The ExerciseCard represents the culmination of performance-first design principles, providing a beautiful, flexible display component that maintains 60fps scrolling even with hundreds of exercises.

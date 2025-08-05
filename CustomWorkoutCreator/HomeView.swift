@@ -10,8 +10,8 @@ import SwiftUI
 struct HomeView: View {
     var body: some View {
         NavigationStack {
-            WorkoutDetailView_New(workout: .previewHIIT)
-                .navigationTitle("home")
+            WorkoutsView()
+                .navigationTitle("Workouts")
         }
     }
 }

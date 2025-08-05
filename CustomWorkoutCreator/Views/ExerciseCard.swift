@@ -51,11 +51,11 @@ struct ExerciseCard: View {
     
     private var trainingMethodDescription: String {
         switch exercise.trainingMethod {
-        case .standard(let minReps, let maxReps):
+        case let .standard(minReps, maxReps):
             return minReps == maxReps ? "\(minReps) reps" : "\(minReps)-\(maxReps) reps"
-        case .timed(let seconds):
+        case let .timed(seconds):
             return "\(seconds) seconds"
-        case .restPause(let targetTotal, let minReps, let maxReps):
+        case let .restPause(targetTotal, minReps, maxReps):
             return "\(targetTotal) total (\(minReps)-\(maxReps) per set)"
         }
     }
@@ -71,16 +71,10 @@ struct ExerciseCard: View {
         (exercise.notes != nil && !exercise.notes!.isEmpty)
     }
     
-    private func calculateSeparatorHeight() -> CGFloat {
-        // Calculate the number of rows in the left column
-        let leftColumnRows = (exercise.weight != nil ? 1 : 0) + (exercise.tempo != nil ? 1 : 0)
-        // Calculate the number of rows in the right column
-        let rightColumnRows = exercise.restAfter != nil ? 1 : 0
-        // Take the maximum of both columns
-        let maxRows = max(leftColumnRows, rightColumnRows)
-        // Each row is approximately 20 points (caption font + 4pt spacing)
-        return CGFloat(maxRows) * 20
-    }
+    // MARK: - Static Constants
+    private static let separatorWidth: CGFloat = 0.5
+    private static let separatorPadding: CGFloat = 8.0
+    private static let separatorColor: Color = Color(UIColor.separator)
     
     
     // MARK: - @ViewBuilder Computed Properties
@@ -122,76 +116,153 @@ struct ExerciseCard: View {
         }
     }
     
+    // MARK: - Static Grid Layout Constants
+    private static let gridVerticalSpacing: CGFloat = 4.0
+    
+    // MARK: - Dynamic Row System
+    
+    /// Represents a single row of detail information in the grid
+    private struct DetailRowData: Identifiable {
+        let id = UUID()
+        let leftContent: AnyView?
+        let rightContent: AnyView?
+        
+        init<L: View, R: View>(left: L?, right: R?) {
+            // Fix AnyView initialization - explicitly handle optionals to avoid type inference issues
+            if let leftView = left {
+                self.leftContent = AnyView(leftView)
+            } else {
+                self.leftContent = nil
+            }
+            
+            if let rightView = right {
+                self.rightContent = AnyView(rightView)
+            } else {
+                self.rightContent = nil
+            }
+        }
+    }
+    
+    /// Reusable component for displaying a single row with left/right content and center separator
+    private struct DetailRow: View {
+        let data: DetailRowData
+        
+        var body: some View {
+            HStack(spacing: 0) {
+                // Left content (flexible width)
+                if let leftContent = data.leftContent {
+                    leftContent
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Spacer()
+                        .frame(maxWidth: .infinity)
+                }
+                
+                // Center separator (fixed width: 1pt + 4pt padding each side = 9pt total)
+                    
+                
+                // Right content (flexible width)
+                if let rightContent = data.rightContent {
+                    rightContent
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Spacer()
+                        .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        
+        // Static separator constants
+        private static let separatorWidth: CGFloat = 1.0
+        private static let separatorPadding: CGFloat = 4.0
+        private static let separatorColor: Color = Color(UIColor.separator)
+    }
+    
+    /// Pre-computed array of rows based on available exercise data
+    /// Handles all combinations: weight, rest, tempo in optimal layout
+    private var detailRows: [DetailRowData] {
+        var rows: [DetailRowData] = []
+        
+        let hasWeight = exercise.weight != nil
+        let hasRest = exercise.restAfter != nil
+        let hasTempo = exercise.tempo != nil
+        
+        // Determine optimal layout based on available data
+        switch (hasWeight, hasRest, hasTempo) {
+        case (true, true, true):
+            // All three: Weight + Rest, Tempo on second row
+            rows.append(DetailRowData(left: weightLabel, right: restLabel))
+            rows.append(DetailRowData(left: tempoLabel, right: nil as EmptyView?))
+            
+        case (true, true, false):
+            // Weight + Rest only
+            rows.append(DetailRowData(left: weightLabel, right: restLabel))
+            
+        case (true, false, true):
+            // Weight + Tempo
+            rows.append(DetailRowData(left: weightLabel, right: tempoLabel))
+            
+        case (false, true, true):
+            // Rest + Tempo
+            rows.append(DetailRowData(left: restLabel, right: tempoLabel))
+            
+        case (true, false, false):
+            // Weight only
+            rows.append(DetailRowData(left: weightLabel, right: nil as EmptyView?))
+            
+        case (false, true, false):
+            // Rest only
+            rows.append(DetailRowData(left: restLabel, right: nil as EmptyView?))
+            
+        case (false, false, true):
+            // Tempo only
+            rows.append(DetailRowData(left: tempoLabel, right: nil as EmptyView?))
+            
+        case (false, false, false):
+            // No optional details (handled by hasOptionalDetails check)
+            break
+        }
+        
+        return rows
+    }
+    
+    // MARK: - Optional Details Grid
+    @ViewBuilder
+    private var optionalDetailsGrid: some View {
+        if hasOptionalDetails {
+            VStack(alignment: .leading, spacing: Self.gridVerticalSpacing) {
+                // Dynamic rows
+                ForEach(detailRows) { rowData in
+                    DetailRow(data: rowData)
+                }
+                
+                // Notes (always full width if present)
+                if let notes = exercise.notes, !notes.isEmpty {
+                    notesText
+                }
+            }
+        }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Exercise Name and Effort
             HStack {
                 Text(exercise.name)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                
+                    .bold()
                 Spacer()
-                
-                Label("\(exercise.effort)/10", systemImage: "flame.fill")
-                    .font(.caption)
-                    .foregroundStyle(effortColor)
-            }
-            
-            // Training Method
-            HStack {
-                Image(systemName: trainingMethodIcon)
-                    .foregroundStyle(.secondary)
-                    .imageScale(.small)
-                
                 Text(trainingMethodDescription)
+                Spacer()
+                Label("\(exercise.effort)", systemImage: "flame.fill")
+                    .fontWeight(.heavy)
+                    .foregroundStyle(.white)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .padding(6)
+                    .background(Capsule().fill(effortColor))
             }
-            
             // Optional Details Grid
-            if hasOptionalDetails {
-                // 2-column grid with vertical separator
-                HStack(alignment: .top, spacing: 0) {
-                    // Left column
-                    VStack(alignment: .leading, spacing: 4) {
-                        // Weight in left column
-                        if exercise.weight != nil {
-                            weightLabel
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        
-                        // Tempo in left column (second row)
-                        if exercise.tempo != nil {
-                            tempoLabel
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    
-                    // Vertical separator
-                    if (exercise.weight != nil || exercise.tempo != nil) && exercise.restAfter != nil {
-                        Rectangle()
-                            .fill(Color.secondary.opacity(0.3))
-                            .frame(width: 0.5)
-                            .frame(height: calculateSeparatorHeight())
-                            .padding(.vertical, 2)
-                    }
-                    
-                    // Right column
-                    VStack(alignment: .leading, spacing: 4) {
-                        // Rest in right column
-                        if exercise.restAfter != nil {
-                            restLabel
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                .padding(.horizontal, 4)
-                
-                // Notes on its own line if present (always full width)
-                notesText
-            }
+            optionalDetailsGrid
+            
         }
     }
 }

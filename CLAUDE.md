@@ -6,6 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 CustomWorkoutCreator is a SwiftUI-based iOS/macOS application for creating and managing custom workouts.
 
+## Project Guidelines
+- Never build the project, ask me explicitly to build and verify if everthing is working
+
 ## SwiftUI Performance Best Practices
 
 ### Memory Management Principles

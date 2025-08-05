@@ -14,6 +14,6 @@ struct CustomWorkoutCreatorApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: Workout.self)
+        .modelContainer(for: [Workout.self, ExerciseItem.self])
     }
 }

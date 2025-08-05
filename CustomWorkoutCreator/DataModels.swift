@@ -162,7 +162,25 @@ enum TrainingMethod: Codable {
 @Model
 class Exercise: Hashable, Comparable {
     var id = UUID()
-    var name: String
+    
+    // Reference to exercise library item
+    @Relationship var exerciseItem: ExerciseItem?
+    
+    // Legacy name property for backward compatibility
+    // For new exercises, name should come from exerciseItem
+    private var legacyName: String = ""
+    
+    // Computed property for name - uses exerciseItem.name if available, otherwise legacyName
+    var name: String {
+        get {
+            exerciseItem?.name ?? legacyName
+        }
+        set {
+            // If we have an exerciseItem, this shouldn't be set directly
+            // But for compatibility, we'll store in legacyName
+            legacyName = newValue
+        }
+    }
     
     // Store enum data as separate properties to avoid SwiftData crash
     private var methodType: String = "standard"
@@ -209,9 +227,24 @@ class Exercise: Hashable, Comparable {
     var tempo: Tempo? // Optional - movement tempo/cadence
     var notes: String? // Optional - additional form cues, instructions
     
+    // Primary initializer with exerciseItem reference
+    init(id: UUID = UUID(), exerciseItem: ExerciseItem, trainingMethod: TrainingMethod, effort: Int = 7, weight: Double? = nil, restAfter: Int? = nil, tempo: Tempo? = nil, notes: String? = nil) {
+        self.id = id
+        self.exerciseItem = exerciseItem
+        self.legacyName = "" // Not used when exerciseItem is provided
+        self.trainingMethod = trainingMethod
+        self.effort = effort
+        self.weight = weight
+        self.restAfter = restAfter
+        self.tempo = tempo
+        self.notes = notes
+    }
+    
+    // Legacy initializer for backward compatibility
     init(id: UUID = UUID(), name: String, trainingMethod: TrainingMethod, effort: Int = 7, weight: Double? = nil, restAfter: Int? = nil, tempo: Tempo? = nil, notes: String? = nil) {
         self.id = id
-        self.name = name
+        self.exerciseItem = nil
+        self.legacyName = name
         self.trainingMethod = trainingMethod
         self.effort = effort
         self.weight = weight
@@ -228,10 +261,11 @@ class Exercise: Hashable, Comparable {
     
     // MARK: - Equatable
     // Full equality check for detecting actual changes to minimize SwiftUI redraws
-    // We compare all value properties including decomposed enum values
+    // We compare all value properties including decomposed enum values and relationships
     static func == (lhs: Exercise, rhs: Exercise) -> Bool {
         lhs.id == rhs.id &&
-        lhs.name == rhs.name &&
+        lhs.exerciseItem == rhs.exerciseItem &&
+        lhs.legacyName == rhs.legacyName &&
         lhs.methodType == rhs.methodType &&
         lhs.minReps == rhs.minReps &&
         lhs.maxReps == rhs.maxReps &&
@@ -251,6 +285,66 @@ class Exercise: Hashable, Comparable {
             return lhs.effort > rhs.effort // Higher effort first
         }
         return lhs.name < rhs.name // Alphabetical by name
+    }
+    
+    // MARK: - Convenience Methods
+    
+    /// Creates an Exercise from an ExerciseItem with default training parameters
+    /// This is the preferred way to create new exercises from the library
+    static func from(exerciseItem: ExerciseItem, trainingMethod: TrainingMethod = .standard(minReps: 10, maxReps: 12), effort: Int = 7) -> Exercise {
+        return Exercise(
+            exerciseItem: exerciseItem,
+            trainingMethod: trainingMethod,
+            effort: effort
+        )
+    }
+}
+
+// MARK: - ExerciseItem Model
+
+/// Represents a library item for exercises - lightweight reference data only
+/// This model serves as the foundation for the exercise library feature
+@Model
+class ExerciseItem: Hashable, Comparable {
+    var id = UUID()
+    var name: String = ""
+    var gifUrl: String? // Optional URL to exercise demonstration GIF
+    
+    init(id: UUID = UUID(), name: String, gifUrl: String? = nil) {
+        self.id = id
+        self.name = name
+        self.gifUrl = gifUrl
+    }
+    
+    // MARK: - Hashable
+    // Hash only the id for performance - SwiftUI uses this for identity
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    // MARK: - Equatable
+    // Full equality check for detecting actual changes to minimize SwiftUI redraws
+    static func == (lhs: ExerciseItem, rhs: ExerciseItem) -> Bool {
+        lhs.id == rhs.id &&
+        lhs.name == rhs.name &&
+        lhs.gifUrl == rhs.gifUrl
+    }
+    
+    // MARK: - Comparable
+    // Sort alphabetically by name for consistent ordering
+    static func < (lhs: ExerciseItem, rhs: ExerciseItem) -> Bool {
+        lhs.name < rhs.name
+    }
+    
+    // MARK: - Convenience Methods
+    
+    /// Creates an Exercise from this ExerciseItem with specified training parameters
+    func createExercise(trainingMethod: TrainingMethod = .standard(minReps: 10, maxReps: 12), effort: Int = 7) -> Exercise {
+        return Exercise(
+            exerciseItem: self,
+            trainingMethod: trainingMethod,
+            effort: effort
+        )
     }
 }
 
@@ -279,6 +373,21 @@ struct Tempo: Codable, Hashable, Equatable {
 }
 
 // Convenience extensions
+extension ExerciseItem {
+    static func makeExamples() -> [ExerciseItem] {
+        return [
+            ExerciseItem(name: "Push-ups", gifUrl: nil),
+            ExerciseItem(name: "Pull-ups", gifUrl: nil),
+            ExerciseItem(name: "Squats", gifUrl: nil),
+            ExerciseItem(name: "Lunges", gifUrl: nil),
+            ExerciseItem(name: "Plank", gifUrl: nil),
+            ExerciseItem(name: "Burpees", gifUrl: nil),
+            ExerciseItem(name: "Dips", gifUrl: nil),
+            ExerciseItem(name: "Mountain Climbers", gifUrl: nil)
+        ]
+    }
+}
+
 extension Workout {
     static func makeExample() -> Workout {
         Workout(

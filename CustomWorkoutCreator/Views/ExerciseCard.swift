@@ -37,6 +37,10 @@ struct ExerciseCard: View {
     
     // MARK: - Pre-computed Properties
     
+    private var exerciseGifUrl: String? {
+        exercise.exerciseItem?.gifUrl
+    }
+    
     private var trainingMethodType: TrainingMethodType {
         switch exercise.trainingMethod {
         case .standard: return .standard
@@ -246,6 +250,25 @@ struct ExerciseCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            // Exercise GIF (if available)
+            if let gifUrl = exerciseGifUrl, !gifUrl.isEmpty {
+                AsyncImage(url: URL(string: gifUrl)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 120)
+                        .cornerRadius(8)
+                } placeholder: {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(height: 120)
+                        .overlay(
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        )
+                }
+            }
+            
             // Exercise Name and Effort
             HStack {
                 Text(exercise.name)
@@ -326,6 +349,20 @@ extension ExerciseCard: Equatable {
             name: "Jumping Jacks",
             trainingMethod: .standard(minReps: 20, maxReps: 20),
             effort: 3
+        )
+    )
+    .padding()
+    .background(ComponentConstants.Colors.secondaryGroupedBackground)
+    .cornerRadius(ComponentConstants.Layout.cornerRadius)
+}
+
+#Preview("Exercise with GIF", traits: .sampleData) {
+    ExerciseCard(
+        exercise: Exercise(
+            exerciseItem: ExerciseItem(name: "Push-ups", gifUrl: "https://example.com/pushups.gif"),
+            trainingMethod: .standard(minReps: 15, maxReps: 20),
+            effort: 6,
+            notes: "Keep body straight, engage core"
         )
     )
     .padding()

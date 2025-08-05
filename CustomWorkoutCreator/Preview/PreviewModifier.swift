@@ -14,7 +14,8 @@ struct SampleDataPreviewModifier: PreviewModifier {
         let schema = Schema([
             Workout.self,
             Interval.self,
-            Exercise.self
+            Exercise.self,
+            ExerciseItem.self
         ])
         
         let configuration = ModelConfiguration(
@@ -33,6 +34,20 @@ struct SampleDataPreviewModifier: PreviewModifier {
         
         // Add sample data
         let context = container.mainContext
+        
+        // Create sample ExerciseItems for the library
+        let pushupItem = ExerciseItem(name: "Push-ups", gifUrl: "https://example.com/pushups.gif")
+        let pullupItem = ExerciseItem(name: "Pull-ups", gifUrl: "https://example.com/pullups.gif")
+        let benchPressItem = ExerciseItem(name: "Bench Press", gifUrl: "https://example.com/benchpress.gif")
+        let squatItem = ExerciseItem(name: "Squats", gifUrl: "https://example.com/squats.gif")
+        let plankItem = ExerciseItem(name: "Plank", gifUrl: "https://example.com/plank.gif")
+        
+        // Insert ExerciseItems
+        context.insert(pushupItem)
+        context.insert(pullupItem)
+        context.insert(benchPressItem)
+        context.insert(squatItem)
+        context.insert(plankItem)
         
         // 1. Strength Training Workout
         let strengthWorkout = Workout(

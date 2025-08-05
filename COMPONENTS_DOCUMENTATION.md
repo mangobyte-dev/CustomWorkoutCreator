@@ -2,17 +2,19 @@
 
 This document provides comprehensive documentation for the reusable UI components in the CustomWorkoutCreator project. These components follow the performance principles outlined in CLAUDE.md and are designed to replace SwiftUI Form components with more performant alternatives.
 
-**Last Updated:** July 30, 2025
+**Last Updated:** July 31, 2025
 
 ## Table of Contents
 
 1. [SectionHeader](#sectionheader)
 2. [Row](#row)
 3. [Expandable](#expandable)
-4. [Integration Guide](#integration-guide)
-5. [Performance Considerations](#performance-considerations)
-6. [Migration Guide](#migration-guide)
-7. [Implementation Notes](#implementation-notes)
+4. [ActionButton](#actionbutton)
+5. [ExpandableList](#expandablelist)
+6. [Integration Guide](#integration-guide)
+7. [Performance Considerations](#performance-considerations)
+8. [Migration Guide](#migration-guide)
+9. [Implementation Notes](#implementation-notes)
 
 ---
 
@@ -435,6 +437,576 @@ LazyVStack(spacing: 16) {
 
 ---
 
+## ActionButton
+
+### Purpose and Use Cases
+
+The `ActionButton` component provides a performant, beautifully animated button system that:
+
+- Replaces standard SwiftUI buttons with enhanced visual feedback
+- Supports 5 distinct styles for different contexts
+- Scales across 3 sizes for various UI needs
+- Includes loading and disabled states
+- Provides haptic feedback for better user experience
+- Supports icon-only, text-only, and icon+text modes
+
+### API Reference
+
+#### Core Component
+
+```swift
+struct ActionButton: View {
+    init(
+        title: String = "",
+        icon: String? = nil,
+        style: ActionButtonStyle = .primary,
+        size: ActionButtonSize = .medium,
+        isLoading: Bool = false,
+        isDisabled: Bool = false,
+        action: @escaping () -> Void
+    )
+}
+```
+
+#### Parameters
+
+- **title**: `String` - Button text (empty for icon-only buttons)
+- **icon**: `String?` - SF Symbol name for button icon
+- **style**: `ActionButtonStyle` - Visual style (.primary, .secondary, .destructive, .ghost, .link)
+- **size**: `ActionButtonSize` - Button size (.small, .medium, .large)
+- **isLoading**: `Bool` - Shows loading indicator when true
+- **isDisabled**: `Bool` - Disables interaction when true
+- **action**: `() -> Void` - Action to perform on tap
+
+#### Style Enum
+
+```swift
+enum ActionButtonStyle {
+    case primary      // Solid background, primary color
+    case secondary    // Bordered, subtle background
+    case destructive  // Red/danger styling
+    case ghost        // Minimal, borderless
+    case link         // Text-only appearance
+}
+```
+
+#### Size Enum
+
+```swift
+enum ActionButtonSize {
+    case small   // Compact, for toolbars
+    case medium  // Default size
+    case large   // Hero CTAs
+}
+```
+
+### Factory Methods
+
+#### Toolbar Button
+```swift
+ActionButton.toolbar(
+    title: "Edit",
+    icon: "pencil",
+    action: { /* action */ }
+)
+// Creates a small ghost button perfect for toolbars
+```
+
+#### Call-to-Action
+```swift
+ActionButton.cta(
+    title: "Get Started",
+    icon: "play.circle.fill",
+    action: { /* action */ }
+)
+// Creates a large primary button for hero sections
+```
+
+#### Compact Button
+```swift
+ActionButton.compact(
+    title: "View All",
+    icon: "arrow.right",
+    action: { /* action */ }
+)
+// Creates a small secondary button
+```
+
+#### Danger Button
+```swift
+ActionButton.danger(
+    title: "Delete",
+    icon: "trash",
+    size: .medium,  // Optional size parameter
+    action: { /* action */ }
+)
+// Creates a destructive-style button
+```
+
+### Usage Examples
+
+#### Basic Primary Button
+```swift
+ActionButton(
+    title: "Save Workout",
+    icon: "square.and.arrow.down",
+    style: .primary
+) {
+    saveWorkout()
+}
+```
+
+#### Loading State
+```swift
+@State private var isSaving = false
+
+ActionButton(
+    title: "Saving...",
+    icon: "checkmark.circle.fill",
+    style: .primary,
+    isLoading: isSaving
+) {
+    // Action disabled while loading
+}
+```
+
+#### Icon-Only Button
+```swift
+ActionButton(
+    icon: "heart.fill",
+    style: .secondary,
+    size: .small
+) {
+    toggleFavorite()
+}
+```
+
+#### Button Group
+```swift
+HStack(spacing: 12) {
+    ActionButton(
+        title: "Cancel",
+        style: .ghost
+    ) {
+        dismiss()
+    }
+    
+    ActionButton(
+        title: "Delete",
+        icon: "trash",
+        style: .destructive
+    ) {
+        deleteItem()
+    }
+}
+```
+
+#### Toolbar Example
+```swift
+HStack {
+    ActionButton.toolbar(icon: "square.and.arrow.up") {
+        share()
+    }
+    
+    ActionButton.toolbar(icon: "heart") {
+        favorite()
+    }
+    
+    Spacer()
+    
+    ActionButton.toolbar(title: "Done") {
+        complete()
+    }
+}
+```
+
+### Animation Details
+
+The ActionButton includes sophisticated animations that make interactions feel delightful:
+
+1. **Press Animations**
+   - Asymmetric X/Y scaling for realistic depth
+   - Style-specific scale factors
+   - Size-based animation intensity
+   - Fast press (0.15s), bouncy release
+
+2. **Style-Specific Springs**
+   - Primary: Balanced (0.35s response, 0.7 damping)
+   - Secondary: Snappy (0.3s response, 0.75 damping)
+   - Destructive: Dramatic (0.4s response, 0.65 damping)
+   - Ghost: Subtle (0.25s response, 0.85 damping)
+   - Link: Minimal (0.2s response, 0.9 damping)
+
+3. **Visual Effects**
+   - Opacity changes on press
+   - Subtle brightness adjustment
+   - 3D rotation on primary/destructive styles
+   - Loading pulse animation
+
+4. **Haptic Feedback**
+   - Light impact on press
+   - Enhances tactile experience
+
+### Best Practices
+
+1. **Choose Appropriate Styles**
+   - Primary: Main actions, CTAs
+   - Secondary: Supporting actions
+   - Destructive: Dangerous operations
+   - Ghost: Subtle actions, toolbars
+   - Link: Navigation, lightweight actions
+
+2. **Size Appropriately**
+   - Small: Toolbars, compact UIs
+   - Medium: Most buttons
+   - Large: Hero sections, important CTAs
+
+3. **Loading States**
+   - Show loading for async operations
+   - Disable interaction during loading
+   - Keep loading text concise
+
+4. **Icon Usage**
+   - Use SF Symbols for consistency
+   - Icon-only for familiar actions
+   - Icon+text for clarity
+
+5. **Accessibility**
+   - Always provide meaningful actions
+   - Use descriptive titles
+   - Consider VoiceOver users
+
+### Common Patterns
+
+#### Confirmation Dialog
+```swift
+VStack(spacing: 16) {
+    Text("Delete this workout?")
+        .font(.headline)
+    
+    Text("This action cannot be undone")
+        .font(.subheadline)
+        .foregroundColor(.secondary)
+    
+    HStack(spacing: 12) {
+        ActionButton(
+            title: "Cancel",
+            style: .secondary
+        ) {
+            dismiss()
+        }
+        
+        ActionButton(
+            title: "Delete",
+            icon: "trash",
+            style: .destructive
+        ) {
+            deleteWorkout()
+        }
+    }
+}
+```
+
+#### Form Actions
+```swift
+VStack {
+    // Form content...
+    
+    ActionButton(
+        title: "Save Changes",
+        icon: "checkmark.circle",
+        style: .primary,
+        isLoading: isSaving,
+        isDisabled: !hasChanges
+    ) {
+        save()
+    }
+}
+```
+
+#### Empty State
+```swift
+VStack(spacing: 24) {
+    Image(systemName: "doc.text.magnifyingglass")
+        .font(.system(size: 60))
+        .foregroundColor(.secondary)
+    
+    Text("No workouts found")
+        .font(.title2)
+    
+    ActionButton.cta(
+        title: "Create Your First Workout",
+        icon: "plus.circle.fill"
+    ) {
+        createWorkout()
+    }
+}
+```
+
+---
+
+## ExpandableList
+
+### Purpose and Use Cases
+
+The `ExpandableList` component is a high-performance, reusable container for managing lists of expandable items. It was created to eliminate boilerplate code when working with lists of expandable content. Key benefits:
+
+- Centralizes expansion state management for lists
+- Provides consistent animations across all expandable lists
+- Eliminates 30+ lines of boilerplate per implementation
+- Follows CLAUDE.md performance principles strictly
+- Works seamlessly with any Identifiable item type
+- Integrates perfectly with the Expandable component
+
+### API Reference
+
+```swift
+struct ExpandableList<Item: Identifiable, Content: View>: View {
+    init(
+        items: [Item],
+        spacing: CGFloat = ComponentConstants.Layout.itemSpacing,
+        animation: Animation = ComponentConstants.Animation.springAnimation,
+        initiallyExpanded: Set<Item.ID> = [],
+        @ViewBuilder content: @escaping (Item, Int, Binding<Bool>) -> Content
+    )
+}
+```
+
+#### Parameters
+
+- **items**: `[Item]` - Array of Identifiable items to display
+- **spacing**: `CGFloat` - Vertical spacing between items (default: 12)
+- **animation**: `Animation` - Animation for expand/collapse transitions
+- **initiallyExpanded**: `Set<Item.ID>` - Set of item IDs that start expanded
+- **content**: `@ViewBuilder (Item, Int, Binding<Bool>) -> Content` - Builder closure that receives:
+  - `item`: The current item
+  - `index`: The item's index in the array
+  - `isExpanded`: Binding to control expansion state
+
+### Convenience Initializers
+
+#### Basic Initializer
+```swift
+// Minimal parameters with defaults
+ExpandableList(items: workouts) { workout, index, isExpanded in
+    WorkoutCard(workout: workout, index: index, isExpanded: isExpanded)
+}
+```
+
+#### External State Control
+```swift
+// For cases where parent needs to control expansion
+@State private var expandedItems: Set<UUID> = []
+
+ExpandableList(
+    items: intervals,
+    expandedItems: $expandedItems
+) { interval, index, isExpanded in
+    IntervalCard(interval: interval, isExpanded: isExpanded)
+}
+```
+
+### Usage Examples
+
+#### Basic Expandable List
+```swift
+struct WorkoutListView: View {
+    let workouts: [Workout]
+    
+    var body: some View {
+        ScrollView {
+            ExpandableList(items: workouts) { workout, index, isExpanded in
+                WorkoutCard(
+                    workout: workout,
+                    workoutNumber: index + 1,
+                    isExpanded: isExpanded
+                )
+            }
+            .padding()
+        }
+    }
+}
+```
+
+#### With Initial Expansion
+```swift
+ExpandableList(
+    items: intervals,
+    initiallyExpanded: [intervals.first?.id].compactMap { $0 }
+) { interval, index, isExpanded in
+    IntervalCard(
+        interval: interval,
+        intervalNumber: index + 1,
+        isExpanded: isExpanded
+    )
+}
+```
+
+#### Custom Spacing and Animation
+```swift
+ExpandableList(
+    items: exercises,
+    spacing: 8,
+    animation: .easeInOut(duration: 0.25)
+) { exercise, index, isExpanded in
+    ExerciseRow(
+        exercise: exercise,
+        isExpanded: isExpanded
+    )
+}
+```
+
+#### Complex List Item
+```swift
+ExpandableList(items: sections) { section, index, isExpanded in
+    Expandable(isExpanded: isExpanded) {
+        // Header content
+        HStack {
+            Text(section.title)
+                .font(.headline)
+            Spacer()
+            Text("\(section.items.count)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    } content: {
+        // Expanded content
+        VStack(spacing: 1) {
+            ForEach(section.items) { item in
+                LabelRow(
+                    title: item.name,
+                    value: item.value,
+                    position: calculatePosition(item, in: section.items)
+                )
+            }
+        }
+    }
+}
+```
+
+### Real-World Example: Workout Detail View
+
+**Before (30+ lines of boilerplate):**
+```swift
+@State private var expandedIntervals: Set<UUID> = []
+
+LazyVStack(spacing: ComponentConstants.Layout.itemSpacing) {
+    ForEach(Array(workout.intervals.enumerated()), id: \.element.id) { index, interval in
+        IntervalCard(
+            interval: interval,
+            intervalNumber: index + 1,
+            isExpanded: Binding(
+                get: { expandedIntervals.contains(interval.id) },
+                set: { isExpanded in
+                    if isExpanded {
+                        expandedIntervals.insert(interval.id)
+                    } else {
+                        expandedIntervals.remove(interval.id)
+                    }
+                }
+            )
+        )
+    }
+}
+.animation(.spring(response: 0.4, dampingFraction: 0.8), value: expandedIntervals)
+```
+
+**After (3 lines, 90% reduction):**
+```swift
+ExpandableList(items: workout.intervals) { interval, index, isExpanded in
+    IntervalCard(interval: interval, intervalNumber: index + 1, isExpanded: isExpanded)
+}
+```
+
+### Best Practices
+
+1. **Let it manage state**: The component handles all expansion state internally
+2. **Use with Expandable**: Pairs perfectly with the Expandable component
+3. **Consistent animations**: Uses ComponentConstants for uniform behavior
+4. **Type safety**: Generic over any Identifiable type
+5. **Performance optimized**: LazyVStack ensures efficient rendering
+
+### Performance Benefits
+
+1. **Pre-computed bindings**: Bindings are created efficiently without closures
+2. **Minimal state tracking**: Single Set for all expansion states
+3. **Lazy rendering**: Uses LazyVStack for large lists
+4. **Animation batching**: Single animation value for entire list
+5. **No runtime allocations**: All parameters have sensible defaults
+
+### Common Patterns
+
+#### Accordion Behavior (Single Expansion)
+```swift
+struct AccordionList<Item: Identifiable>: View {
+    let items: [Item]
+    @State private var expandedItem: Item.ID?
+    
+    var body: some View {
+        LazyVStack(spacing: 12) {
+            ForEach(items) { item in
+                ExpandableCard(
+                    item: item,
+                    isExpanded: Binding(
+                        get: { expandedItem == item.id },
+                        set: { _ in
+                            expandedItem = expandedItem == item.id ? nil : item.id
+                        }
+                    )
+                )
+            }
+        }
+        .animation(.spring(), value: expandedItem)
+    }
+}
+```
+
+#### With Section Headers
+```swift
+VStack(spacing: ComponentConstants.Layout.sectionSpacing) {
+    ForEach(sections) { section in
+        VStack(spacing: ComponentConstants.Layout.compactPadding) {
+            SectionHeader(title: section.title)
+            
+            ExpandableList(items: section.items) { item, index, isExpanded in
+                ItemCard(
+                    item: item,
+                    sectionName: section.title,
+                    isExpanded: isExpanded
+                )
+            }
+        }
+    }
+}
+```
+
+#### Integration with SwiftData
+```swift
+struct WorkoutListView: View {
+    @Query private var workouts: [Workout]
+    
+    var body: some View {
+        ScrollView {
+            ExpandableList(items: Array(workouts)) { workout, index, isExpanded in
+                WorkoutCard(
+                    workout: workout,
+                    isExpanded: isExpanded
+                )
+            }
+        }
+    }
+}
+```
+
+### Implementation Notes
+
+1. **Generic Constraints**: The component requires items to be Identifiable for proper tracking
+2. **Static Properties Fix**: Generic types in Swift can't have static stored properties, so defaults are passed directly in parameter declarations
+3. **Equatable Conformance**: Provided when Item conforms to Equatable for better performance
+4. **External Control**: While supported, internal state management is recommended for simplicity
+
+---
+
 ## Integration Guide
 
 ### Replacing Form Sections
@@ -706,9 +1278,64 @@ This change ensures proper animations in list contexts while maintaining the com
 4. **Equatable conformance**: Minimizes unnecessary view updates
 5. **No runtime closures**: All closures are passed as parameters, not created in view body
 
+### ActionButton Implementation Details
+
+The ActionButton component was designed with particular attention to animation performance and user delight:
+
+1. **Animation Performance**
+   - All scale factors pre-computed based on style and size
+   - Spring parameters stored as computed properties
+   - Separate animations for press/release stored as properties
+   - Minimal state tracking with just isPressed and pressStartTime
+
+2. **Visual Polish**
+   - Asymmetric X/Y scaling creates realistic button depth
+   - Style-specific animations give each button type unique personality
+   - Size-based animation scaling ensures consistency across sizes
+   - 3D rotation effect adds subtle depth to primary/destructive styles
+
+3. **Interaction Details**
+   - Haptic feedback using UIImpactFeedbackGenerator
+   - Press timing tracked for potential gesture enhancements
+   - Loading state with gentle pulse animation
+   - Disabled state properly prevents all interactions
+
+4. **Factory Methods**
+   - Common patterns encapsulated (toolbar, CTA, compact, danger)
+   - Sensible defaults for each use case
+   - Consistent naming for discoverability
+
+### ExpandableList Implementation Details
+
+The ExpandableList component was created to solve a common pattern that appeared repeatedly throughout the codebase:
+
+1. **Problem Identification**
+   - Same expansion state management code repeated in multiple views
+   - 30+ lines of boilerplate for each expandable list
+   - Inconsistent animation implementations
+   - Error-prone binding creation in ForEach loops
+
+2. **Solution Design**
+   - Generic component that works with any Identifiable type
+   - Internal state management with Set<Item.ID>
+   - Pre-computed binding creation method
+   - Consistent animation behavior using ComponentConstants
+
+3. **Performance Optimizations**
+   - LazyVStack for efficient rendering of large lists
+   - Single animation modifier for entire list
+   - No closures created in view body
+   - Equatable conformance when Item is Equatable
+
+4. **Discovered Benefits**
+   - 90% code reduction in implementations
+   - Consistent behavior across all expandable lists
+   - Easier to maintain and update
+   - Better performance due to centralized optimization
+
 ## Summary
 
-The Row, SectionHeader, and Expandable components provide a performant, flexible alternative to SwiftUI's Form components. By following the principles and patterns documented here, you can achieve:
+The Row, SectionHeader, Expandable, ActionButton, and ExpandableList components provide a performant, flexible alternative to SwiftUI's Form components. By following the principles and patterns documented here, you can achieve:
 
 - 40-60% reduction in view updates
 - Consistent 60fps scrolling performance

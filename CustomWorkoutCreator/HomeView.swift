@@ -10,7 +10,7 @@ import SwiftUI
 struct HomeView: View {
     var body: some View {
         NavigationStack {
-            Text("home")
+            WorkoutDetailView_New(workout: .previewHIIT)
                 .navigationTitle("home")
         }
     }

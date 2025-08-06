@@ -388,6 +388,44 @@ extension ExerciseItem {
     }
 }
 
+// MARK: - Default Exercise Library
+extension ExerciseItem {
+    static func createDefaultExercises(in context: ModelContext) {
+        let exercises = [
+            // Chest
+            ("Push-ups", "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExpushups/giphy.gif"),
+            ("Bench Press", nil),
+            ("Incline Dumbbell Press", nil),
+            
+            // Back
+            ("Pull-ups", "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExpullups/giphy.gif"),
+            ("Bent-Over Row", nil),
+            ("Lat Pulldown", nil),
+            
+            // Legs
+            ("Squats", "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExsquats/giphy.gif"),
+            ("Lunges", nil),
+            ("Romanian Deadlifts", nil),
+            
+            // Core
+            ("Plank", "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExplank/giphy.gif"),
+            ("Crunches", nil),
+            ("Russian Twists", nil),
+            
+            // Arms & Shoulders
+            ("Bicep Curls", nil),
+            ("Tricep Dips", nil),
+            ("Shoulder Press", nil)
+        ]
+
+        for (name, gifUrl) in exercises {
+            let exercise = ExerciseItem(name: name, gifUrl: gifUrl)
+            context.insert(exercise)
+        }
+        try? context.save()
+    }
+}
+
 extension Workout {
     static func makeExample() -> Workout {
         Workout(

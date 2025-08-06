@@ -41,7 +41,7 @@ struct ExerciseLibraryView: View {
         }
         .task {
             if exercises.isEmpty {
-                ExerciseItem.createDefaultExercises(in: modelContext)
+                ExerciseItem.loadFromBundle(in: modelContext)
             }
         }
     }

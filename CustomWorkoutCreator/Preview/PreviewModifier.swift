@@ -35,12 +35,12 @@ struct SampleDataPreviewModifier: PreviewModifier {
         // Add sample data
         let context = container.mainContext
         
-        // Create sample ExerciseItems for the library
-        let pushupItem = ExerciseItem(name: "Push-ups", gifUrl: "https://example.com/pushups.gif")
-        let pullupItem = ExerciseItem(name: "Pull-ups", gifUrl: "https://example.com/pullups.gif")
-        let benchPressItem = ExerciseItem(name: "Bench Press", gifUrl: "https://example.com/benchpress.gif")
-        let squatItem = ExerciseItem(name: "Squats", gifUrl: "https://example.com/squats.gif")
-        let plankItem = ExerciseItem(name: "Plank", gifUrl: "https://example.com/plank.gif")
+        // Create sample ExerciseItems for the library using real exercise IDs from our bundle
+        let pushupItem = ExerciseItem(name: "push-up inside leg kick", gifUrl: "0br45wL")
+        let pullupItem = ExerciseItem(name: "Pull-ups", gifUrl: nil) // No specific pull-up in first 5, using nil
+        let benchPressItem = ExerciseItem(name: "barbell decline close grip to skull press", gifUrl: "LMGXZn8")
+        let squatItem = ExerciseItem(name: "kettlebell goblet squat", gifUrl: "ZA8b5hc")
+        let plankItem = ExerciseItem(name: "band shrug", gifUrl: "trmte8s")
         
         // Insert ExerciseItems
         context.insert(pushupItem)

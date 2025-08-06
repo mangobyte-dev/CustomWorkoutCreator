@@ -388,8 +388,47 @@ extension ExerciseItem {
     }
 }
 
+// MARK: - JSON Codable Struct for Bundle Loading
+struct ExerciseData: Codable {
+    let exerciseId: String
+    let name: String
+}
+
 // MARK: - Default Exercise Library
 extension ExerciseItem {
+    /// Loads exercises from bundled JSON file containing 1,500 exercises
+    static func loadFromBundle(in context: ModelContext) {
+        guard let url = Bundle.main.url(forResource: "exercises", withExtension: "json") else {
+            print("Could not find exercises.json in bundle")
+            createDefaultExercises(in: context)
+            return
+        }
+        
+        do {
+            let data = try Data(contentsOf: url)
+            let exerciseDataArray = try JSONDecoder().decode([ExerciseData].self, from: data)
+            
+            print("Loading \(exerciseDataArray.count) exercises from bundle...")
+            
+            for exerciseData in exerciseDataArray {
+                let exercise = ExerciseItem(
+                    name: exerciseData.name,
+                    gifUrl: exerciseData.exerciseId // Store just the exerciseId, we'll construct the bundle path in views
+                )
+                context.insert(exercise)
+            }
+            
+            try context.save()
+            print("Successfully loaded \(exerciseDataArray.count) exercises from bundle")
+            
+        } catch {
+            print("Error loading exercises from bundle: \(error)")
+            // Fallback to default exercises if bundle loading fails
+            createDefaultExercises(in: context)
+        }
+    }
+    
+    /// Legacy method - kept for compatibility but replaced by loadFromBundle
     static func createDefaultExercises(in context: ModelContext) {
         let exercises = [
             // Chest

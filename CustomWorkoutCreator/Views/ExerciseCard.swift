@@ -37,12 +37,11 @@ struct ExerciseCard: View {
     
     // MARK: - Pre-computed Properties
     
-    private var exerciseGifUrl: URL? {
-        guard let exerciseId = exercise.exerciseItem?.gifUrl, !exerciseId.isEmpty else {
+    private var exerciseGifName: String? {
+        guard let gifName = exercise.exerciseItem?.gifUrl, !gifName.isEmpty else {
             return nil
         }
-        // Construct bundle URL for local GIF files
-        return Bundle.main.url(forResource: exerciseId, withExtension: "gif", subdirectory: "Resources/ExerciseGIFs")
+        return gifName
     }
     
     private var trainingMethodType: TrainingMethodType {
@@ -255,22 +254,10 @@ struct ExerciseCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Exercise GIF (if available)
-            if let gifUrl = exerciseGifUrl {
-                AsyncImage(url: gifUrl) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(height: 120)
-                        .cornerRadius(8)
-                } placeholder: {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(height: 120)
-                        .overlay(
-                            ProgressView()
-                                .scaleEffect(0.8)
-                        )
-                }
+            if let gifName = exerciseGifName {
+                GifImageView(gifName)
+                    .frame(height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             
             // Exercise Name and Effort

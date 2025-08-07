@@ -8,152 +8,246 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - Observable Model with Smart Caching
+@Observable
+final class ExerciseLibraryModel {
+    var exercises: [ExerciseItem] = []
+    var searchText = ""
+    
+    private var _filteredItems: [ExerciseItem]?
+    private var _lastFilterText = ""
+    private var _gifAvailability: [UUID: Bool] = [:]
+    
+    var filteredExercises: [ExerciseItem] {
+        if searchText == _lastFilterText, let cached = _filteredItems {
+            return cached
+        }
+        
+        _lastFilterText = searchText
+        _filteredItems = searchText.isEmpty 
+            ? exercises 
+            : exercises.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        
+        return _filteredItems ?? []
+    }
+    
+    func precomputeGifAvailability() {
+        print("🔄 Pre-computing GIF availability for \(exercises.count) exercises")
+        var foundCount = 0
+        var missingCount = 0
+        
+        for exercise in exercises {
+            if let gifName = exercise.gifUrl {
+                // Try all possible paths
+                let hasGif = Bundle.main.url(forResource: gifName, withExtension: "gif") != nil ||
+                            Bundle.main.url(forResource: gifName, withExtension: "gif", subdirectory: "ExerciseGIFs") != nil ||
+                            Bundle.main.url(forResource: gifName, withExtension: "gif", subdirectory: "Resources/ExerciseGIFs") != nil
+                
+                _gifAvailability[exercise.id] = hasGif
+                
+                if hasGif {
+                    foundCount += 1
+                    if foundCount <= 3 {
+                        print("✅ Found GIF for: '\(gifName)'")
+                    }
+                } else {
+                    missingCount += 1
+                    if missingCount <= 3 {
+                        print("❌ Missing GIF for: '\(gifName)'")
+                    }
+                }
+            }
+        }
+        
+        print("📊 GIF availability: \(foundCount) found, \(missingCount) missing out of \(exercises.count) total")
+    }
+    
+    func hasGif(for exercise: ExerciseItem) -> Bool {
+        _gifAvailability[exercise.id] ?? false
+    }
+    
+    func updateExercises(_ newExercises: [ExerciseItem]) {
+        exercises = newExercises
+        _filteredItems = nil
+        precomputeGifAvailability()
+    }
+}
+
+// MARK: - Main View with ViewBuilders
 struct ExerciseLibraryView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \ExerciseItem.name) private var exercises: [ExerciseItem]
-    @State private var searchText = ""
-    @State private var showingAddExercise = false
     
-    // Step 5.8: Add filteredExercises computed property
-    var filteredExercises: [ExerciseItem] {
-        if searchText.isEmpty {
-            return exercises
-        } else {
-            return exercises.filter { 
-                $0.name.localizedCaseInsensitiveContains(searchText) 
-            }
-        }
-    }
+    @State private var model = ExerciseLibraryModel()
+    @State private var showingAddExercise = false
+    @State private var searchTask: Task<Void, Never>?
+    @State private var searchText = ""
     
     var body: some View {
         NavigationStack {
-            contentView
-                .navigationTitle("Exercise Library")
-                .navigationBarTitleDisplayMode(.large)
-                .searchable(text: $searchText)
-                .toolbar {
-                    toolbarContent
-                }
-                .sheet(isPresented: $showingAddExercise) {
-                    // Placeholder for future exercise form view
-                    Text("Add Exercise Form")
-                }
+            mainContent
         }
         .task {
-            if exercises.isEmpty {
-                ExerciseItem.loadFromBundle(in: modelContext)
-            }
+            loadInitialDataIfNeeded
+        }
+        .onAppear {
+            model.updateExercises(exercises)
+        }
+        .onChange(of: exercises) { _, newValue in
+            model.updateExercises(newValue)
+        }
+        .onChange(of: searchText) { _, newValue in
+            performDebouncedSearch(newValue)
         }
     }
     
-    // MARK: - ViewBuilders
+    // MARK: - ViewBuilder Components
     
     @ViewBuilder
-    private var contentView: some View {
-        if filteredExercises.isEmpty {
+    private var mainContent: some View {
+        listOrEmptyState
+            .navigationTitle("Exercise Library")
+            .navigationBarTitleDisplayMode(.large)
+            .searchable(text: $searchText)
+            .toolbar { toolbarContent }
+            .sheet(isPresented: $showingAddExercise) { addExerciseSheet }
+    }
+    
+    @ViewBuilder
+    private var listOrEmptyState: some View {
+        if model.filteredExercises.isEmpty {
             emptyStateView
         } else {
-            exerciseListView
+            optimizedListView
+        }
+    }
+    
+    @ViewBuilder
+    private var optimizedListView: some View {
+        List {
+            ForEach(model.filteredExercises) { item in
+                EquatableView(
+                    content: OptimizedExerciseRow(
+                        item: item,
+                        hasGif: model.hasGif(for: item)
+                    )
+                )
+            }
+            .onDelete(perform: deleteExercises)
         }
     }
     
     @ViewBuilder
     private var emptyStateView: some View {
         ContentUnavailableView(
-            "No Exercises",
+            emptyStateTitle,
             systemImage: "dumbbell",
-            description: Text(searchText.isEmpty ? "Tap + to add your first exercise" : "No exercises match your search")
+            description: Text(emptyStateDescription)
         )
     }
     
     @ViewBuilder
-    private var exerciseListView: some View {
-        List {
-            ForEach(filteredExercises) { exerciseItem in
-                ExerciseItemRow(exerciseItem: exerciseItem)
-            }
-            .onDelete { indices in
-                deleteExercises(at: indices)
-            }
-        }
+    private var addExerciseSheet: some View {
+        Text("Add Exercise Form")
     }
     
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
-            Button {
-                showingAddExercise = true
-            } label: {
+            Button(action: { showingAddExercise = true }) {
                 Image(systemName: "plus")
+            }
+        }
+    }
+    
+    // MARK: - Computed Properties
+    
+    private var emptyStateTitle: String {
+        "No Exercises"
+    }
+    
+    private var emptyStateDescription: String {
+        searchText.isEmpty 
+            ? "Tap + to add your first exercise" 
+            : "No exercises match your search"
+    }
+    
+    private var loadInitialDataIfNeeded: Void {
+        if exercises.isEmpty {
+            ExerciseItem.loadFromBundle(in: modelContext)
+        }
+    }
+    
+    // MARK: - Actions
+    
+    private func performDebouncedSearch(_ text: String) {
+        searchTask?.cancel()
+        searchTask = Task {
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            if !Task.isCancelled {
+                await MainActor.run {
+                    model.searchText = text
+                }
             }
         }
     }
     
     private func deleteExercises(at indices: IndexSet) {
         for index in indices {
-            if filteredExercises.indices.contains(index) {
-                modelContext.delete(filteredExercises[index])
+            if model.filteredExercises.indices.contains(index) {
+                modelContext.delete(model.filteredExercises[index])
             }
         }
     }
 }
 
-struct ExerciseItemRow: View {
-    let exerciseItem: ExerciseItem
+// MARK: - Optimized Row with ViewBuilders and Equatable
+struct OptimizedExerciseRow: View, Equatable {
+    let item: ExerciseItem
+    let hasGif: Bool
     
-    // Check if exercise has a GIF for demonstration label
-    private var hasGif: Bool {
-        guard let gifUrl = exerciseItem.gifUrl, !gifUrl.isEmpty else { 
-            return false
-        }
-        return Bundle.main.url(forResource: gifUrl, withExtension: "gif", subdirectory: "ExerciseGIFs") != nil
-    }
+    @State private var showGif = false
     
     var body: some View {
-        HStack(spacing: 12) {
-            // Step 5.15: GIF thumbnail with Step 5.16 placeholder fallback
-            gifThumbnailView
-            
-            // Step 5.14: Enhanced content layout
-            VStack(alignment: .leading, spacing: 6) {
-                Text(exerciseItem.name)
-                    .font(.headline)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                
-                HStack(spacing: 8) {
-                    demonstrationLabel
-                    
-                }
-            }
-            
-            Spacer(minLength: 8)
-            
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-        }
-        .padding(.vertical, 8)
+        rowContent
+            .onAppear { enableGifLoading() }
+            .onDisappear { showGif = false }
     }
     
-    // MARK: - ViewBuilders
+    // MARK: - ViewBuilder Components
     
     @ViewBuilder
-    private var gifThumbnailView: some View {
+    private var rowContent: some View {
+        HStack(spacing: 12) {
+            thumbnailView
+            textContent
+            Spacer()
+            chevronIcon
+        }
+        .padding(.vertical, 6)
+    }
+    
+    @ViewBuilder
+    private var thumbnailView: some View {
         Group {
-            if let gifName = exerciseItem.gifUrl, !gifName.isEmpty {
-                // Use GifImageView for animated GIF display
-                GifImageView(gifName)
+            if showGif {
+                gifOrPlaceholder
             } else {
-                // Step 5.16: Placeholder for exercises without GIFs
-                placeholderImage
+                loadingPlaceholder
             }
         }
         .frame(width: 48, height: 48)
         .clipShape(RoundedRectangle(cornerRadius: 8))
-        .background {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(.quaternary.opacity(0.3))
+    }
+    
+    @ViewBuilder
+    private var gifOrPlaceholder: some View {
+        if let gifName = item.gifUrl, hasGif {
+            let _ = print("🎯 Row loading GIF: '\(gifName)' (hasGif: true)")
+            GifImageView(gifName)
+        } else {
+            let _ = print("⚠️ Row showing placeholder - gifUrl: '\(item.gifUrl ?? "nil")' hasGif: \(hasGif)")
+            staticPlaceholder
         }
     }
     
@@ -163,33 +257,66 @@ struct ExerciseItemRow: View {
             .fill(.quaternary.opacity(0.3))
             .overlay {
                 ProgressView()
-                    .scaleEffect(0.7)
+                    .scaleEffect(0.5)
             }
     }
     
     @ViewBuilder
-    private var placeholderImage: some View {
+    private var staticPlaceholder: some View {
         RoundedRectangle(cornerRadius: 8)
             .fill(.quaternary.opacity(0.3))
             .overlay {
                 Image(systemName: "figure.strengthtraining.traditional")
-                    .font(.title2)
                     .foregroundStyle(.secondary)
             }
     }
     
     @ViewBuilder
-    private var demonstrationLabel: some View {
-        if hasGif {
-            Label("Video", systemImage: "play.circle.fill")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .labelStyle(.titleAndIcon)
-        } else {
-            Text("No demo")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+    private var textContent: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            exerciseName
+            if hasGif {
+                demoLabel
+            }
         }
+    }
+    
+    @ViewBuilder
+    private var exerciseName: some View {
+        Text(item.name)
+            .font(.headline)
+            .lineLimit(2)
+    }
+    
+    @ViewBuilder
+    private var demoLabel: some View {
+        Label("Demo", systemImage: "play.circle.fill")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+    }
+    
+    @ViewBuilder
+    private var chevronIcon: some View {
+        Image(systemName: "chevron.right")
+            .font(.caption)
+            .foregroundStyle(.tertiary)
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func enableGifLoading() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            showGif = true
+        }
+    }
+    
+    // MARK: - Equatable
+    
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.item.id == rhs.item.id &&
+        lhs.item.name == rhs.item.name &&
+        lhs.item.gifUrl == rhs.item.gifUrl &&
+        lhs.hasGif == rhs.hasGif
     }
 }
 

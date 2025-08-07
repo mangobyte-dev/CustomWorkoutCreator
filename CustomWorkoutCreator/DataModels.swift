@@ -336,6 +336,16 @@ class ExerciseItem: Hashable, Comparable {
         lhs.name < rhs.name
     }
     
+    // MARK: - Performance Optimizations for List Display
+    
+    /// Checks if this ExerciseItem has visible changes compared to another
+    /// Used for precise diffing in SwiftUI lists to minimize redraws
+    func hasVisibleChanges(comparedTo other: ExerciseItem) -> Bool {
+        self.id != other.id ||
+        self.name != other.name ||
+        self.gifUrl != other.gifUrl
+    }
+    
     // MARK: - Convenience Methods
     
     /// Creates an Exercise from this ExerciseItem with specified training parameters

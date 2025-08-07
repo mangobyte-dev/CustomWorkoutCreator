@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8BE3E3042E4481F5006A66C4 /* Giffy in Frameworks */ = {isa = PBXBuildFile; productRef = 8BE3E3032E4481F5006A66C4 /* Giffy */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		8B350D8C2E27B84200D93F3F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -40,6 +44,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8BE3E3042E4481F5006A66C4 /* Giffy in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -92,6 +97,7 @@
 			);
 			name = CustomWorkoutCreator;
 			packageProductDependencies = (
+				8BE3E3032E4481F5006A66C4 /* Giffy */,
 			);
 			productName = CustomWorkoutCreator;
 			productReference = 8B350D6F2E279F9900D93F3F /* CustomWorkoutCreator.app */;
@@ -148,6 +154,9 @@
 			);
 			mainGroup = 8B350D662E279F9900D93F3F;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8BE3E3022E4481F5006A66C4 /* XCRemoteSwiftPackageReference "Giffy" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8B350D702E279F9900D93F3F /* Products */;
 			projectDirPath = "";
@@ -456,6 +465,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8BE3E3022E4481F5006A66C4 /* XCRemoteSwiftPackageReference "Giffy" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tfmart/Giffy";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8BE3E3032E4481F5006A66C4 /* Giffy */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8BE3E3022E4481F5006A66C4 /* XCRemoteSwiftPackageReference "Giffy" */;
+			productName = Giffy;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8B350D672E279F9900D93F3F /* Project object */;
 }

@@ -3,11 +3,18 @@
 //  CustomWorkoutCreatorTests
 //
 //  Created by Developer on 16/07/2025.
+//  Modernized with comprehensive test architecture
 //
 
 import Testing
 import Foundation
 @testable import CustomWorkoutCreator
+
+// MARK: - Legacy Tests (Migrated to Modern Architecture)
+
+/// These tests have been modernized and integrated with the new test architecture.
+/// See: TestArchitecture.swift, SwiftDataModelTests.swift, ComponentTests.swift, etc.
+/// This file now contains the foundational data model tests that remain relevant.
 
 struct DataModelsTests {
     

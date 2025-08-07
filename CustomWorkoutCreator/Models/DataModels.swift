@@ -50,7 +50,7 @@ class Workout: Hashable, Comparable {
 }
 
 @Model
-class Interval: Hashable, Comparable {
+class Interval: Hashable {
     var id = UUID()
     var name: String? // Optional name for the interval (e.g., "Warmup", "Main Set", "Cooldown")
     @Relationship(deleteRule: .cascade) var exercises: [Exercise] = []
@@ -83,21 +83,6 @@ class Interval: Hashable, Comparable {
         lhs.restBetweenRounds == rhs.restBetweenRounds &&
         lhs.restAfterInterval == rhs.restAfterInterval &&
         lhs.exercises.count == rhs.exercises.count
-    }
-    
-    // MARK: - Comparable
-    // Sort by name (if present), then by id for stable ordering
-    static func < (lhs: Interval, rhs: Interval) -> Bool {
-        switch (lhs.name, rhs.name) {
-        case let (lhsName?, rhsName?):
-            return lhsName < rhsName
-        case (nil, _?):
-            return false // nil names come after named intervals
-        case (_?, nil):
-            return true // named intervals come before nil names
-        case (nil, nil):
-            return lhs.id.uuidString < rhs.id.uuidString // stable ordering by id
-        }
     }
 }
 
@@ -176,7 +161,7 @@ extension TrainingMethod: Equatable {
 }
 
 @Model
-class Exercise: Hashable, Comparable {
+class Exercise: Hashable {
     var id = UUID()
     
     // Reference to exercise library item
@@ -305,15 +290,6 @@ class Exercise: Hashable, Comparable {
         lhs.restAfter == rhs.restAfter &&
         lhs.tempo == rhs.tempo &&
         lhs.notes == rhs.notes
-    }
-    
-    // MARK: - Comparable
-    // Sort by effort (higher effort first), then by name
-    static func < (lhs: Exercise, rhs: Exercise) -> Bool {
-        if lhs.effort != rhs.effort {
-            return lhs.effort > rhs.effort // Higher effort first
-        }
-        return lhs.name < rhs.name // Alphabetical by name
     }
     
     // MARK: - Convenience Methods

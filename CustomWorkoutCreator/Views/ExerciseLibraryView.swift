@@ -148,7 +148,7 @@ struct ExerciseLibraryView: View {
     
     @ViewBuilder
     private var addExerciseSheet: some View {
-        Text("Add Exercise Form")
+        AddExerciseView()
     }
     
     @ToolbarContentBuilder

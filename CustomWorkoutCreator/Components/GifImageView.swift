@@ -29,8 +29,21 @@ struct GifImageView: View {
     private var gifContent: some View {
         if let url = gifURL {
             let _ = print("✅ GIF URL found: \(url.path)")
-            Giffy(filePath: url)
-                .aspectRatio(contentMode: .fit)
+            
+            if name.contains("_custom_") || name.hasSuffix(".jpg") || name.hasSuffix(".jpeg") {
+                // Custom photos are static images, not GIFs
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                } placeholder: {
+                    ProgressView()
+                }
+            } else {
+                // Bundle GIFs use Giffy
+                Giffy(filePath: url)
+                    .aspectRatio(contentMode: .fit)
+            }
         } else {
             let _ = print("❌ GIF URL not found for: '\(name)'")
             placeholderContent
@@ -48,8 +61,24 @@ struct GifImageView: View {
     
     // Pre-compute URL once with debug logging
     private var gifURL: URL? {
-        // Debug: Try multiple approaches
+        // Debug logging
+        print("🔍 GifImageView looking for: '\(name)'")
         
+        // Check for custom images first (stored in Documents directory)
+        if name.contains("_custom_") || name.hasSuffix(".jpg") || name.hasSuffix(".jpeg") {
+            let documentsPath = FileManager.default.urls(for: .documentDirectory, 
+                                                         in: .userDomainMask).first!
+            let customPath = documentsPath.appendingPathComponent("custom_exercises").appendingPathComponent(name)
+            
+            if FileManager.default.fileExists(atPath: customPath.path) {
+                print("✅ Found custom image: \(customPath.path)")
+                return customPath
+            } else {
+                print("❌ Custom image not found at: \(customPath.path)")
+            }
+        }
+        
+        // Try bundle GIFs
         // Approach 1: With ExerciseGIFs subdirectory
         if let url = Bundle.main.url(forResource: name, withExtension: "gif", subdirectory: "ExerciseGIFs") {
             print("📦 Found GIF in ExerciseGIFs subdirectory: \(url.path)")
@@ -68,42 +97,7 @@ struct GifImageView: View {
             return url
         }
         
-        // Debug: List what's actually in the bundle
-        print("🔍 Searching for: '\(name).gif'")
-        print("🔍 Main bundle path: \(Bundle.main.bundlePath)")
-        
-        // Try to find any GIF files to understand the structure
-        if let resourcePath = Bundle.main.resourcePath {
-            let fileManager = FileManager.default
-            do {
-                let items = try fileManager.contentsOfDirectory(atPath: resourcePath)
-                let gifFiles = items.filter { $0.hasSuffix(".gif") }
-                if !gifFiles.isEmpty {
-                    print("🔍 Found \(gifFiles.count) GIF files in main bundle")
-                    print("🔍 First few GIFs: \(gifFiles.prefix(3))")
-                } else {
-                    // Check subdirectories
-                    let subdirs = items.filter { item in
-                        var isDirectory: ObjCBool = false
-                        let fullPath = (resourcePath as NSString).appendingPathComponent(item)
-                        return fileManager.fileExists(atPath: fullPath, isDirectory: &isDirectory) && isDirectory.boolValue
-                    }
-                    print("🔍 Found subdirectories: \(subdirs)")
-                    
-                    // Check ExerciseGIFs subdirectory specifically
-                    let exerciseGIFsPath = (resourcePath as NSString).appendingPathComponent("ExerciseGIFs")
-                    if fileManager.fileExists(atPath: exerciseGIFsPath) {
-                        let exerciseGIFs = try fileManager.contentsOfDirectory(atPath: exerciseGIFsPath)
-                        let gifCount = exerciseGIFs.filter { $0.hasSuffix(".gif") }.count
-                        print("🔍 ExerciseGIFs directory contains \(gifCount) GIF files")
-                    } else {
-                        print("🔍 ExerciseGIFs directory not found at: \(exerciseGIFsPath)")
-                    }
-                }
-            } catch {
-                print("🔍 Error listing bundle contents: \(error)")
-            }
-        }
+        print("❌ Not found: '\(name)'")
         
         return nil
     }

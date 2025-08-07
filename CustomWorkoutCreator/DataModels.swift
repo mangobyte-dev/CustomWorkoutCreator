@@ -159,6 +159,22 @@ enum TrainingMethod: Codable {
     }
 }
 
+// MARK: - Equatable conformance for TrainingMethod
+extension TrainingMethod: Equatable {
+    static func == (lhs: TrainingMethod, rhs: TrainingMethod) -> Bool {
+        switch (lhs, rhs) {
+        case let (.standard(lMinReps, lMaxReps), .standard(rMinReps, rMaxReps)):
+            return lMinReps == rMinReps && lMaxReps == rMaxReps
+        case let (.restPause(lTarget, lMin, lMax), .restPause(rTarget, rMin, rMax)):
+            return lTarget == rTarget && lMin == rMin && lMax == rMax
+        case let (.timed(lSeconds), .timed(rSeconds)):
+            return lSeconds == rSeconds
+        default:
+            return false
+        }
+    }
+}
+
 @Model
 class Exercise: Hashable, Comparable {
     var id = UUID()
@@ -226,6 +242,19 @@ class Exercise: Hashable, Comparable {
     var restAfter: Int? // Optional - rest after this exercise in seconds
     var tempo: Tempo? // Optional - movement tempo/cadence
     var notes: String? // Optional - additional form cues, instructions
+    
+    // Default initializer for new exercises (to be configured later)
+    init(id: UUID = UUID()) {
+        self.id = id
+        self.exerciseItem = nil
+        self.legacyName = ""
+        self.trainingMethod = .standard(minReps: 8, maxReps: 12)
+        self.effort = 5
+        self.weight = nil
+        self.restAfter = nil
+        self.tempo = nil
+        self.notes = nil
+    }
     
     // Primary initializer with exerciseItem reference
     init(id: UUID = UUID(), exerciseItem: ExerciseItem, trainingMethod: TrainingMethod, effort: Int = 7, weight: Double? = nil, restAfter: Int? = nil, tempo: Tempo? = nil, notes: String? = nil) {

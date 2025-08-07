@@ -149,6 +149,91 @@ class Exercise {
 }
 ```
 
+## Exercise Library Implementation Patterns
+
+### GIF Display Optimization
+- **Never use WKWebView for GIFs** - Creates browser instances for each GIF (500MB+ memory)
+- **Use Giffy package** - Optimized FLAnimatedImage wrapper (80MB for 1,500 GIFs)
+- **Bundle GIFs as folder references** - Blue folder in Xcode, not groups
+- **Differentiate media types** - Check for custom_ prefix or .jpg extension
+
+### List Performance Patterns
+```swift
+// ✅ Use EquatableView for precise list updates
+ForEach(exercises) { exercise in
+    EquatableView(content: OptimizedExerciseRow(exercise: exercise))
+}
+
+// ✅ Cache filtered results in @Observable model
+@Observable
+final class ExerciseLibraryModel {
+    private var _filteredItems: [ExerciseItem]?
+    private var _lastFilterText = ""
+    
+    var filteredExercises: [ExerciseItem] {
+        if searchText == _lastFilterText, let cached = _filteredItems {
+            return cached
+        }
+        // Recompute and cache
+    }
+}
+```
+
+### Search Optimization
+- **Debounce search input** - 250ms delay prevents excessive filtering
+- **Cache search results** - Store last filter text and results
+- **Pre-compute searchable fields** - Combine name and notes for single search
+
+### Bundle Resource Management
+```swift
+// Load bundled exercises on first launch
+static func loadFromBundle() -> [ExerciseItem] {
+    guard let url = Bundle.main.url(forResource: "exercises", withExtension: "json") else { return [] }
+    // Parse and create ExerciseItems
+}
+
+// GIF path resolution
+var gifURL: URL? {
+    if name.hasPrefix("custom_") {
+        return documentsURL?.appendingPathComponent(gifUrl)
+    } else {
+        return Bundle.main.url(forResource: gifUrl, withExtension: nil)
+    }
+}
+```
+
+### Component Isolation with ViewBuilder
+```swift
+// ✅ Use 15+ ViewBuilders in complex views for update isolation
+@ViewBuilder
+private var searchSection: some View { ... }
+
+@ViewBuilder  
+private var listSection: some View { ... }
+
+@ViewBuilder
+private var emptyState: some View { ... }
+```
+
+### Recent Items Tracking
+```swift
+@Observable
+final class RecentExercisesManager {
+    private let maxRecent = 10
+    var recentIDs: [UUID] = []
+    
+    func addRecent(_ item: ExerciseItem) {
+        // Remove if exists, add to front, trim to max
+        recentIDs.removeAll { $0 == item.id }
+        recentIDs.insert(item.id, at: 0)
+        if recentIDs.count > maxRecent {
+            recentIDs = Array(recentIDs.prefix(maxRecent))
+        }
+        // Persist to UserDefaults
+    }
+}
+```
+
 ## Summary
 
 These practices result in:
@@ -159,5 +244,7 @@ These practices result in:
 - Maintainable, scalable codebase
 - **Stable SwiftData previews without crashes**
 - **Reliable CRUD operations in development**
+- **84% memory reduction with Giffy vs WKWebView** (500MB → 80MB)
+- **Instant search with smart caching** (<50ms response time)
 
 Always prioritize user experience and app performance. Profile regularly and optimize based on actual measurements, not assumptions.

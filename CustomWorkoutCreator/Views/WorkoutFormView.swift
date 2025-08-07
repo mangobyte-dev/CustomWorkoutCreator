@@ -87,6 +87,7 @@ struct WorkoutFormView: View {
 struct IntervalRow: View {
     @Binding var interval: Interval
     @State private var isExpanded = true
+    @State private var showingNewExercisePicker = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -126,13 +127,21 @@ struct IntervalRow: View {
                     interval.exercises.remove(atOffsets: indices)
                 }
                 
-                Button("Add Exercise") {
-                    interval.exercises.append(
-                        Exercise(name: "New Exercise", trainingMethod: .standard(minReps: 8, maxReps: 12))
-                    )
+                Button {
+                    showingNewExercisePicker = true
+                } label: {
+                    Label("Add Exercise", systemImage: "plus.circle")
                 }
                 .font(.callout)
                 .padding(.top, 4)
+                .sheet(isPresented: $showingNewExercisePicker) {
+                    ExercisePicker(selectedExercise: .constant(nil)) { selected in
+                        let newExercise = Exercise()
+                        newExercise.exerciseItem = selected
+                        newExercise.trainingMethod = .standard(minReps: 8, maxReps: 12)
+                        interval.exercises.append(newExercise)
+                    }
+                }
             }
         }
         .padding(.vertical, 4)
@@ -141,12 +150,53 @@ struct IntervalRow: View {
 
 struct ExerciseRow: View {
     @Binding var exercise: Exercise
+    @State private var showingExercisePicker = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            TextField("Exercise Name", text: $exercise.name)
-                .font(.callout)
+            // Exercise selection button
+            Button {
+                showingExercisePicker = true
+            } label: {
+                HStack {
+                    // GIF thumbnail if available
+                    if let exerciseItem = exercise.exerciseItem,
+                       let gifUrl = exerciseItem.gifUrl {
+                        GifImageView(gifUrl)
+                            .frame(width: 30, height: 30)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    } else {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(.quaternary.opacity(0.3))
+                            .frame(width: 30, height: 30)
+                            .overlay {
+                                Image(systemName: "plus")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                    }
+                    
+                    // Exercise name or prompt
+                    if let exerciseItem = exercise.exerciseItem {
+                        Text(exerciseItem.name)
+                            .font(.callout)
+                            .foregroundStyle(.primary)
+                    } else {
+                        Text("Select Exercise")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .buttonStyle(.plain)
             
+            // Training method info
             HStack {
                 Text("Effort: \(exercise.effort)")
                     .font(.caption)
@@ -160,6 +210,14 @@ struct ExerciseRow: View {
             }
         }
         .padding(.vertical, 4)
+        .sheet(isPresented: $showingExercisePicker) {
+            ExercisePicker(selectedExercise: Binding(
+                get: { exercise.exerciseItem },
+                set: { _ in }
+            )) { selected in
+                exercise.exerciseItem = selected
+            }
+        }
     }
     
     private var methodDescription: String {

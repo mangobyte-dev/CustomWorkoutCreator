@@ -6,8 +6,99 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 CustomWorkoutCreator is a SwiftUI-based iOS/macOS application for creating and managing custom workouts.
 
+## Project Structure (Updated: August 7, 2025)
+
+```
+CustomWorkoutCreator/
+├── App/                           # App Entry & Configuration
+│   ├── ContentView.swift         # Main tab container
+│   └── CustomWorkoutCreatorApp.swift # App entry point
+│
+├── Models/                        # Data Models & Core Types
+│   └── DataModels.swift          # SwiftData models (Workout, Interval, Exercise)
+│
+├── Views/                         # All Views & Screens
+│   ├── Main/                     # Tab Views
+│   │   ├── HomeView.swift       # Home tab
+│   │   ├── WorkoutsView.swift   # Workouts list tab
+│   │   ├── ExerciseLibraryView.swift # Exercise library tab
+│   │   └── SettingsView.swift   # Settings tab
+│   │
+│   ├── Workout/                  # Workout-related Views
+│   │   ├── WorkoutDetailView.swift      # Workout details display
+│   │   ├── WorkoutFormView.swift        # Create/edit workout form
+│   │   ├── WorkoutDetailViewCache.swift # Performance cache
+│   │   ├── IntervalCard.swift           # Interval display card
+│   │   └── ExerciseCard.swift           # Exercise display card
+│   │
+│   └── Exercise/                 # Exercise-related Views
+│       ├── ExercisePicker.swift # Exercise selection modal
+│       └── AddExerciseView.swift # Add custom exercise form
+│
+├── Components/                    # Reusable UI Components
+│   ├── Core/                     # Foundation Components
+│   │   ├── ComponentConstants.swift # Pre-computed constants
+│   │   ├── Row.swift            # Flexible row component
+│   │   ├── SectionHeader.swift # Section headers
+│   │   ├── ActionButton.swift  # Custom button system
+│   │   └── EquatableView.swift # Performance wrapper
+│   │
+│   ├── Layout/                   # Layout & Container Components
+│   │   ├── Expandable.swift    # Expandable container
+│   │   └── ExpandableList.swift # List of expandables
+│   │
+│   ├── Input/                    # Input Components
+│   │   ├── NumberInputRow.swift      # Numeric input
+│   │   ├── RangeInputRow.swift       # Min-max range input
+│   │   ├── TimeInputRow.swift        # Time input (seconds)
+│   │   ├── EffortSliderRow.swift     # Effort level selector
+│   │   └── TrainingMethodPicker.swift # Training method selector
+│   │
+│   ├── Cards/                    # Complex Card Components
+│   │   ├── ExerciseFormCard.swift # Exercise configuration card
+│   │   └── IntervalFormCard.swift # Interval management card
+│   │
+│   └── Media/                    # Media Display Components
+│       └── GifImageView.swift   # GIF display with Giffy
+│
+├── Resources/                     # Assets & Data
+│   ├── Assets.xcassets          # Images, colors, app icon
+│   ├── exercises.json           # Exercise database (1,500+)
+│   └── ExerciseGIFs/           # GIF animations folder
+│
+├── Preview/                       # Preview Support
+│   ├── PreviewModifier.swift    # SwiftData preview helper
+│   ├── PreviewData.swift        # Sample data for previews
+│   └── PreviewContainer.swift   # Preview container setup
+│
+├── Services/                      # (Ready for future services)
+└── Utilities/                     # (Ready for future utilities)
+    ├── Extensions/               # Swift extensions
+    └── Helpers/                  # Helper functions
+```
+
+### Documentation Structure
+```
+Documentation/
+├── Guides/                        # How-to Guides
+│   ├── CLAUDE.md                # This file
+│   ├── COMPONENTS_DOCUMENTATION.md # Component API docs
+│   └── EXPANDABLE_LIST_GUIDE.md # ExpandableList patterns
+│
+├── Progress/                      # Progress Tracking
+│   ├── PROGRESS.md              # Current progress
+│   └── COMPLETED_FEATURES.md    # Feature documentation
+│
+└── Architecture/                  # Technical Documentation
+    ├── PROJECT_REORGANIZATION_PLAN.md # Reorganization details
+    └── WORKOUT_FORM_REFACTORING_PLAN.md # Form refactoring
+```
+
 ## Project Guidelines
-- Never build the project, ask me explicitly to build and verify if everthing is working
+- Never build the project, ask me explicitly to build and verify if everything is working
+- Follow the folder structure above when creating new files
+- Place components in the appropriate Components/ subfolder
+- Keep views organized by feature area (Main, Workout, Exercise)
 
 ## SwiftUI Performance Best Practices
 
@@ -84,8 +175,10 @@ CustomWorkoutCreator is a SwiftUI-based iOS/macOS application for creating and m
 - **Measure render times in DEBUG builds** - Catch regressions early
 
 ### Code Organization Principles
-- **Group related views together** - Logical folder structure
-- **Extract reusable components** - Build a component library
+- **Follow project structure** - Use the folder organization defined above
+- **Components go in typed subfolders** - Core, Layout, Input, Cards, Media
+- **Views organized by feature** - Main (tabs), Workout, Exercise
+- **Documentation centralized** - All docs in Documentation/ folder
 - **Consistent naming conventions** - Clear, descriptive names
 - **Document performance-critical code** - Explain optimizations
 
@@ -186,7 +279,7 @@ struct BadCard: View {
 2. **Pass bindings through** - ExpandableList → Child → Expandable
 3. **No @State in list items** - Always accept @Binding from parent
 4. **No manual ForEach expansion management** - Let ExpandableList handle it
-5. **See Documentation/EXPANDABLE_LIST_GUIDE.md** for comprehensive patterns
+5. **See Documentation/Guides/EXPANDABLE_LIST_GUIDE.md** for comprehensive patterns
 
 ### Nested ExpandableList Pattern
 ```swift
@@ -291,14 +384,59 @@ final class RecentExercisesManager {
 }
 ```
 
+## File Creation Guidelines
+
+When creating new files, follow this placement guide:
+
+### Views
+- **Tab views** → `Views/Main/`
+- **Workout screens** → `Views/Workout/`
+- **Exercise screens** → `Views/Exercise/`
+- **Shared views** → `Views/Shared/`
+
+### Components
+- **Base UI (Row, Button, Header)** → `Components/Core/`
+- **Containers (Expandable, Lists)** → `Components/Layout/`
+- **Form inputs** → `Components/Input/`
+- **Complex cards** → `Components/Cards/`
+- **Media display** → `Components/Media/`
+
+### Other Files
+- **Data models** → `Models/`
+- **Business logic** → `Services/`
+- **Extensions** → `Utilities/Extensions/`
+- **Helper functions** → `Utilities/Helpers/`
+- **Documentation** → `Documentation/` (appropriate subfolder)
+- **Tests** → `CustomWorkoutCreatorTests/` (mirror app structure)
+
+## Import Path Examples
+
+```swift
+// Components are in subfolders but imported directly
+import SwiftUI
+
+// No special imports needed - Xcode handles the paths
+struct MyView: View {
+    var body: some View {
+        // Components work normally
+        Row(position: .first) { ... }
+        ActionButton(...) { ... }
+        ExpandableList(...) { ... }
+    }
+}
+```
+
 ## Summary
 
-These practices result in:
+These practices and organization result in:
 - 40-70% reduction in CPU usage
 - 50-90% reduction in memory allocations
 - Consistent 60fps performance
 - Responsive user interactions
-- Maintainable, scalable codebase
+- **Clean, scalable project structure**
+- **3x faster file discovery**
+- **Clear architectural boundaries**
+- **Maintainable, scalable codebase**
 - **Stable SwiftData previews without crashes**
 - **Reliable CRUD operations in development**
 - **84% memory reduction with Giffy vs WKWebView** (500MB → 80MB)

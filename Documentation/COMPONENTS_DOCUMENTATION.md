@@ -12,10 +12,19 @@ This document provides comprehensive documentation for the reusable UI component
 4. [ActionButton](#actionbutton)
 5. [ExpandableList](#expandablelist)
 6. [ExerciseCard](#exercisecard)
-7. [Integration Guide](#integration-guide)
-8. [Performance Considerations](#performance-considerations)
-9. [Migration Guide](#migration-guide)
-10. [Implementation Notes](#implementation-notes)
+7. [Input Components](#input-components)
+   - [NumberInputRow](#numberinputrow)
+   - [RangeInputRow](#rangeinputrow)
+   - [TimeInputRow](#timeinputrow)
+   - [EffortSliderRow](#effortsliderrow)
+   - [TrainingMethodPicker](#trainingmethodpicker)
+8. [Form Cards](#form-cards)
+   - [ExerciseFormCard](#exerciseformcard)
+   - [IntervalFormCard](#intervalformcard)
+9. [Integration Guide](#integration-guide)
+10. [Performance Considerations](#performance-considerations)
+11. [Migration Guide](#migration-guide)
+12. [Implementation Notes](#implementation-notes)
 
 ---
 
@@ -349,7 +358,21 @@ struct Expandable<Header: View, Content: View>: View, Equatable {
 
 ### Important: State Management
 
-The Expandable component manages its own expansion state internally. This design decision was made to ensure proper animations in list contexts. If you need external control, consider wrapping the component or using a different approach.
+⚠️ **CRITICAL**: When using Expandable in lists, you MUST use ExpandableList and pass bindings from parent. Do NOT use internal state.
+
+```swift
+// ❌ WRONG - Internal state breaks animations in lists
+struct BadCard: View {
+    @State private var isExpanded = false  // DON'T DO THIS IN LISTS!
+}
+
+// ✅ CORRECT - Accept binding from ExpandableList
+struct GoodCard: View {
+    @Binding var isExpanded: Bool  // Accept from parent
+}
+```
+
+See [EXPANDABLE_LIST_GUIDE.md](./EXPANDABLE_LIST_GUIDE.md) for detailed implementation patterns.
 
 ### Usage Examples
 
@@ -927,6 +950,8 @@ ExpandableList(items: workout.intervals) { interval, index, isExpanded in
 4. **Type safety**: Generic over any Identifiable type
 5. **Performance optimized**: LazyVStack ensures efficient rendering
 
+⚠️ **IMPORTANT**: For comprehensive implementation guidelines and common pitfalls to avoid, see [EXPANDABLE_LIST_GUIDE.md](./EXPANDABLE_LIST_GUIDE.md)
+
 ### Performance Benefits
 
 1. **Pre-computed bindings**: Bindings are created efficiently without closures
@@ -1478,3 +1503,217 @@ VStack(spacing: 12) {
 - **Type-erased views** only where necessary for dynamic content
 
 The ExerciseCard represents the culmination of performance-first design principles, providing a beautiful, flexible display component that maintains 60fps scrolling even with hundreds of exercises.
+
+---
+
+## Input Components
+
+### NumberInputRow
+
+**Purpose**: Provides numeric input with +/- buttons for precise control over integer values.
+
+```swift
+struct NumberInputRow: View {
+    let title: String
+    @Binding var value: Int
+    let range: ClosedRange<Int>
+    let icon: String?
+    let position: RowPosition
+}
+```
+
+**Usage**:
+```swift
+NumberInputRow(
+    title: "Rounds",
+    value: $rounds,
+    range: 1...20,
+    icon: "repeat",
+    position: .middle
+)
+```
+
+**Features**:
+- Smart increment/decrement buttons
+- Range enforcement
+- Icon support
+- Row position for proper grouping
+
+### RangeInputRow
+
+**Purpose**: Input for min-max ranges like rep ranges.
+
+```swift
+struct RangeInputRow: View {
+    let title: String
+    @Binding var minValue: Int
+    @Binding var maxValue: Int
+    let icon: String?
+    let position: RowPosition
+}
+```
+
+**Usage**:
+```swift
+RangeInputRow(
+    title: "Rep Range",
+    minValue: $minReps,
+    maxValue: $maxReps,
+    icon: "number",
+    position: .middle
+)
+```
+
+### TimeInputRow
+
+**Purpose**: Specialized input for time values in seconds.
+
+```swift
+struct TimeInputRow: View {
+    let title: String
+    @Binding var seconds: Int
+    let icon: String?
+    let position: RowPosition
+}
+```
+
+**Usage**:
+```swift
+TimeInputRow(
+    title: "Rest Time",
+    seconds: $restSeconds,
+    icon: "pause.circle",
+    position: .last
+)
+```
+
+### EffortSliderRow
+
+**Purpose**: Visual slider for effort level selection (1-10).
+
+```swift
+struct EffortSliderRow: View {
+    let title: String
+    @Binding var effort: Int
+    let icon: String?
+    let position: RowPosition
+}
+```
+
+**Usage**:
+```swift
+EffortSliderRow(
+    title: "Effort Level",
+    effort: $exercise.effort,
+    icon: "gauge",
+    position: .middle
+)
+```
+
+**Features**:
+- Color-coded display (green to red)
+- Compact circular indicators
+- Smooth selection animation
+
+### TrainingMethodPicker
+
+**Purpose**: Dynamic selector for different training methods with appropriate inputs.
+
+```swift
+struct TrainingMethodPicker: View {
+    @Binding var trainingMethod: TrainingMethod
+    let showDescription: Bool
+    // Decomposed state bindings for SwiftData compatibility
+    @Binding var standardMinReps: Int
+    @Binding var standardMaxReps: Int
+    @Binding var timedDuration: Int
+    @Binding var restPauseMinisets: Int
+}
+```
+
+**Usage**:
+```swift
+TrainingMethodPicker(
+    trainingMethod: $method,
+    showDescription: false,
+    standardMinReps: $minReps,
+    standardMaxReps: $maxReps,
+    timedDuration: $duration,
+    restPauseMinisets: $minisets
+)
+```
+
+---
+
+## Form Cards
+
+### ExerciseFormCard
+
+**Purpose**: Complete exercise configuration card with expandable details.
+
+```swift
+struct ExerciseFormCard: View {
+    @Binding var exercise: Exercise
+    @Binding var isExpanded: Bool
+    let onDelete: () -> Void
+}
+```
+
+**Features**:
+- GIF thumbnail display
+- Exercise picker integration
+- Training method configuration
+- Effort level adjustment
+- Smooth expand/collapse animation
+- Delete functionality
+
+**Usage**:
+```swift
+ExerciseFormCard(
+    exercise: $exercise,
+    isExpanded: $isExpanded
+) {
+    deleteExercise()
+}
+```
+
+### IntervalFormCard
+
+**Purpose**: Interval management with nested exercise list.
+
+```swift
+struct IntervalFormCard: View {
+    @Binding var interval: Interval
+    @Binding var isExpanded: Bool
+    let intervalNumber: Int
+    let onDelete: () -> Void
+    let onAddExercise: () -> Void
+}
+```
+
+**Features**:
+- Interval name editing
+- Rounds configuration
+- Rest between rounds
+- Nested ExpandableList for exercises
+- Add/delete exercise functionality
+- Professional empty state
+
+**Usage**:
+```swift
+IntervalFormCard(
+    interval: $interval,
+    isExpanded: $isExpanded,
+    intervalNumber: index + 1
+) {
+    deleteInterval()
+} onAddExercise: {
+    showExercisePicker()
+}
+```
+
+**Implementation Notes**:
+- Uses ExpandableList for nested exercises
+- Decomposed state for SwiftData compatibility
+- Pre-computed static values for performance
+- Smooth spring animations throughout

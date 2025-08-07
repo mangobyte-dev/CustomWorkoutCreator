@@ -74,6 +74,8 @@ CustomWorkoutCreator is a SwiftUI-based iOS/macOS application for creating and m
 - **Don't perform I/O in view updates** - Use async tasks
 - **Don't ignore view update cycles** - Understand when views re-render
 - **Never use shadows effects or modifiers**
+- **Don't use @State in list items** - Breaks animations, use ExpandableList with bindings
+- **Don't manage expansion state manually in ForEach** - Use ExpandableList component
 
 ### Testing & Debugging Principles
 - **Use Self._printChanges() to debug re-renders**
@@ -147,6 +149,61 @@ class Exercise {
         set { /* Decompose enum */ }
     }
 }
+```
+
+## ExpandableList Implementation Patterns
+
+### CRITICAL: Correct Usage Pattern
+```swift
+// ✅ CORRECT - Let ExpandableList manage state
+struct GoodView: View {
+    let items: [Item]
+    
+    var body: some View {
+        ExpandableList(items: items) { item, index, isExpanded in
+            ItemCard(
+                item: item,
+                isExpanded: isExpanded  // Pass binding from ExpandableList
+            )
+        }
+    }
+}
+
+// ✅ CORRECT - Child accepts binding
+struct ItemCard: View {
+    let item: Item
+    @Binding var isExpanded: Bool  // Accept from parent, NOT @State
+}
+
+// ❌ WRONG - Don't use internal state in list items
+struct BadCard: View {
+    @State private var isExpanded = false  // BREAKS ANIMATIONS!
+}
+```
+
+### Key Rules for ExpandableList
+1. **Always use ExpandableList for expandable lists** - Never manage state manually
+2. **Pass bindings through** - ExpandableList → Child → Expandable
+3. **No @State in list items** - Always accept @Binding from parent
+4. **No manual ForEach expansion management** - Let ExpandableList handle it
+5. **See Documentation/EXPANDABLE_LIST_GUIDE.md** for comprehensive patterns
+
+### Nested ExpandableList Pattern
+```swift
+// ✅ CORRECT - Nested expandables
+Expandable(
+    isExpanded: $intervalExpanded,
+    header: { /* interval header */ },
+    content: {
+        // Nested ExpandableList for exercises
+        ExpandableList(items: interval.exercises) { exercise, index, exerciseExpanded in
+            ExerciseCard(
+                exercise: $interval.exercises[index],
+                isExpanded: exerciseExpanded
+            )
+        }
+    }
+)
 ```
 
 ## Exercise Library Implementation Patterns

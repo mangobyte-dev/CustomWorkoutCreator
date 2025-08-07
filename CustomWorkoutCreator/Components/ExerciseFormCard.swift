@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - ExerciseFormCard Component
 struct ExerciseFormCard: View {
     @Binding var exercise: Exercise
-    @State private var isExpanded = false
+    @Binding var isExpanded: Bool
     @State private var showingPicker = false
     let onDelete: () -> Void
     
@@ -15,48 +15,73 @@ struct ExerciseFormCard: View {
     @State private var restPauseMinisets: Int = 20
     
     // Pre-computed static values following CLAUDE.md performance principles
-    private static let cardCornerRadius: CGFloat = 12
     private static let thumbnailSize: CGSize = CGSize(width: 40, height: 40)
-    private static let expandCollapseAnimationDuration: Double = 0.4
-    private static let springAnimation: Animation = .spring(response: 0.4, dampingFraction: 0.8)
-    
-    // Static content spacing values
     private static let headerSpacing: CGFloat = 12
-    private static let contentSpacing: CGFloat = 16
     private static let expandedContentSpacing: CGFloat = 1
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header - Always visible
-            headerContent
-                .background(ComponentConstants.Row.backgroundColor)
-                .clipShape(UnevenRoundedRectangle(
-                    topLeadingRadius: Self.cardCornerRadius,
-                    bottomLeadingRadius: isExpanded ? 0 : Self.cardCornerRadius,
-                    bottomTrailingRadius: isExpanded ? 0 : Self.cardCornerRadius,
-                    topTrailingRadius: Self.cardCornerRadius,
-                    style: .continuous
-                ))
-            
-            // Expanded content - Conditionally visible
-            if isExpanded {
-                expandedContent
-                    .clipShape(UnevenRoundedRectangle(
-                        topLeadingRadius: 0,
-                        bottomLeadingRadius: Self.cardCornerRadius,
-                        bottomTrailingRadius: Self.cardCornerRadius,
-                        topTrailingRadius: 0,
-                        style: .continuous
-                    ))
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95, anchor: .top)
-                            .combined(with: .opacity),
-                        removal: .scale(scale: 0.95, anchor: .top)
-                            .combined(with: .opacity)
-                    ))
+        Expandable(
+            isExpanded: $isExpanded,
+            header: {
+                // Header content - Exercise selection button and GIF thumbnail
+                HStack(spacing: Self.headerSpacing) {
+                    // Exercise selection button
+                    ActionButton(
+                        title: exerciseName,
+                        icon: "figure.run",
+                        style: .ghost,
+                        size: .medium
+                    ) {
+                        showingPicker = true
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    // GIF Thumbnail
+                    if let gifUrl = exercise.exerciseItem?.gifUrl {
+                        GifImageView(gifUrl)
+                            .frame(width: Self.thumbnailSize.width, height: Self.thumbnailSize.height)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                }
+        },
+        content: {
+            // Expanded content - Training method configuration, effort slider, and delete button
+            VStack(spacing: Self.expandedContentSpacing) {
+                // Training method configuration
+                TrainingMethodPicker(
+                    trainingMethod: trainingMethodBinding,
+                    showDescription: false,
+                    standardMinReps: $standardMinReps,
+                    standardMaxReps: $standardMaxReps,
+                    timedDuration: $timedDuration,
+                    restPauseMinisets: $restPauseMinisets
+                )
+                
+                // Effort level slider
+                EffortSliderRow(
+                    title: "Effort Level",
+                    effort: $exercise.effort,
+                    icon: "gauge",
+                    position: .middle
+                )
+                
+                
+                // Delete button
+                VStack(spacing: 0) {
+                    ActionButton.danger(
+                        title: "Delete Exercise",
+                        icon: "trash",
+                        size: .small
+                    ) {
+                        onDelete()
+                    }
+                    .padding(.horizontal, ComponentConstants.Row.horizontalPadding)
+                    .padding(.vertical, ComponentConstants.Row.verticalPadding)
+                    .frame(maxWidth: .infinity)
+                    .background(ComponentConstants.Row.backgroundColor)
+                }
             }
-        }
-        .animation(Self.springAnimation, value: isExpanded)
+        })
         .onAppear {
             syncDecomposedValues()
         }
@@ -84,83 +109,6 @@ struct ExerciseFormCard: View {
         }
     }
     
-    // MARK: - Header Content
-    
-    @ViewBuilder
-    private var headerContent: some View {
-        HStack(spacing: Self.headerSpacing) {
-            // Exercise selection button
-            ActionButton(
-                title: exerciseName,
-                icon: "figure.run",
-                style: .ghost,
-                size: .medium
-            ) {
-                showingPicker = true
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            
-            // GIF Thumbnail
-            if let gifUrl = exercise.exerciseItem?.gifUrl {
-                GifImageView(gifUrl)
-                    .frame(width: Self.thumbnailSize.width, height: Self.thumbnailSize.height)
-                    .clipShape(RoundedRectangle(cornerRadius: 6))
-            }
-            
-            // Expand/Collapse button
-            ActionButton(
-                icon: chevronIcon,
-                style: .ghost,
-                size: .small
-            ) {
-                withAnimation(Self.springAnimation) {
-                    isExpanded.toggle()
-                }
-            }
-        }
-        .padding(.horizontal, ComponentConstants.Row.horizontalPadding)
-        .padding(.vertical, ComponentConstants.Row.verticalPadding)
-    }
-    
-    // MARK: - Expanded Content
-    
-    @ViewBuilder
-    private var expandedContent: some View {
-        VStack(spacing: Self.expandedContentSpacing) {
-            // Training method configuration
-            TrainingMethodPicker(
-                trainingMethod: trainingMethodBinding,
-                showDescription: false,
-                standardMinReps: $standardMinReps,
-                standardMaxReps: $standardMaxReps,
-                timedDuration: $timedDuration,
-                restPauseMinisets: $restPauseMinisets
-            )
-            
-            // Effort level slider
-            EffortSliderRow(
-                title: "Effort Level",
-                effort: $exercise.effort,
-                icon: "gauge",
-                position: .middle
-            )
-            
-            // Delete button
-            VStack(spacing: 0) {
-                ActionButton.danger(
-                    title: "Delete Exercise",
-                    icon: "trash",
-                    size: .small
-                ) {
-                    onDelete()
-                }
-                .padding(.horizontal, ComponentConstants.Row.horizontalPadding)
-                .padding(.vertical, ComponentConstants.Row.verticalPadding)
-                .frame(maxWidth: .infinity)
-                .background(ComponentConstants.Row.backgroundColor)
-            }
-        }
-    }
     
     // MARK: - Computed Properties
     
@@ -169,10 +117,6 @@ struct ExerciseFormCard: View {
             return "Select Exercise"
         }
         return exercise.name
-    }
-    
-    private var chevronIcon: String {
-        isExpanded ? "chevron.up" : "chevron.down"
     }
     
     // Custom binding that updates decomposed values when TrainingMethod changes
@@ -216,21 +160,37 @@ extension ExerciseFormCard: Equatable {
 
 // MARK: - Preview Provider
 #Preview("Exercise Form Card") {
-    @Previewable @State var exercise = Exercise(
-        exerciseItem: ExerciseItem(name: "Push-ups", gifUrl: "01qpYSe"),
-        trainingMethod: .standard(minReps: 8, maxReps: 12),
-        effort: 7
-    )
-    
-    VStack(spacing: 16) {
-        ExerciseFormCard(exercise: $exercise) {
-            print("Delete exercise")
-        }
+    struct PreviewWrapper: View {
+        @State private var exercise = Exercise(
+            exerciseItem: ExerciseItem(name: "Push-ups", gifUrl: "01qpYSe"),
+            trainingMethod: .standard(minReps: 8, maxReps: 12),
+            effort: 7
+        )
+        @State private var isExpanded = false
         
-        Spacer()
+        var body: some View {
+            ScrollView {
+                VStack(spacing: 16) {
+                    ExerciseFormCard(
+                        exercise: $exercise,
+                        isExpanded: $isExpanded
+                    ) {
+                        print("Delete exercise")
+                    }
+                    .animation(.spring(), value: isExpanded)
+                    
+                    Button("Toggle Expansion") {
+                        isExpanded.toggle()
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .padding()
+            }
+            .background(ComponentConstants.Colors.groupedBackground)
+        }
     }
-    .padding()
-    .background(ComponentConstants.Colors.groupedBackground)
+    
+    return PreviewWrapper()
 }
 
 #Preview("Multiple Cards") {
@@ -253,11 +213,12 @@ extension ExerciseFormCard: Equatable {
     ]
     
     ScrollView {
-        VStack(spacing: 12) {
-            ForEach(exercises.indices, id: \.self) { index in
-                ExerciseFormCard(exercise: .constant(exercises[index])) {
-                    exercises.remove(at: index)
-                }
+        ExpandableList(items: exercises) { exercise, index, isExpanded in
+            ExerciseFormCard(
+                exercise: .constant(exercise),
+                isExpanded: isExpanded
+            ) {
+                print("Delete exercise at index \(index)")
             }
         }
         .padding()

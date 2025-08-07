@@ -4,6 +4,8 @@
 //
 //  Created by Developer on 20/07/2025.
 //
+// Refactored to use high-performance ScrollView + LazyVStack architecture
+// Following CLAUDE.md performance principles
 
 import SwiftUI
 import SwiftData
@@ -16,29 +18,98 @@ struct WorkoutFormView: View {
     
     @State private var workoutName = ""
     @State private var intervals: [Interval] = []
+    @State private var showingExercisePicker = false
+    @State private var selectedIntervalIndex: Int?
+    @FocusState private var focusedField: Field?
+    
+    enum Field: Hashable {
+        case workoutName
+        case intervalName(Int)
+    }
+    
+    // Pre-computed static values
+    private static let headerSpacing: CGFloat = ComponentConstants.Layout.sectionSpacing
+    private static let contentSpacing: CGFloat = ComponentConstants.Layout.sectionSpacing
     
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Workout Details") {
-                    TextField("Workout Name", text: $workoutName)
-                }
-                
-                Section("Intervals") {
-                    ForEach($intervals) { $interval in
-                        IntervalRow(interval: $interval)
-                    }
-                    .onDelete { indices in
-                        intervals.remove(atOffsets: indices)
+            ScrollView {
+                LazyVStack(spacing: Self.contentSpacing) {
+                    // Workout Name Section
+                    VStack(spacing: ComponentConstants.Layout.compactPadding) {
+                        SectionHeader(title: "Workout Details")
+                            .padding(.horizontal, ComponentConstants.Layout.defaultPadding)
+                        
+                        VStack(spacing: 0) {
+                            Row(position: .only) {
+                                HStack(spacing: ComponentConstants.Row.contentSpacing) {
+                                    Text("Name")
+                                        .font(ComponentConstants.Row.titleFont)
+                                        .foregroundStyle(ComponentConstants.Row.primaryTextColor)
+                                    
+                                    TextField("Workout Name", text: $workoutName)
+                                        .font(ComponentConstants.Row.valueFont)
+                                        .foregroundStyle(ComponentConstants.Row.primaryTextColor)
+                                        .multilineTextAlignment(.trailing)
+                                        .focused($focusedField, equals: .workoutName)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, ComponentConstants.Layout.defaultPadding)
                     }
                     
-                    Button("Add Interval") {
-                        let newInterval = Interval()
-                        newInterval.name = "Interval \(intervals.count + 1)"
-                        intervals.append(newInterval)
+                    // Intervals Section
+                    VStack(spacing: ComponentConstants.Layout.compactPadding) {
+                        HStack {
+                            SectionHeader(title: "Intervals") {
+                                Text("\(intervals.count)")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            ActionButton(
+                                title: "Add Interval",
+                                icon: "plus.circle",
+                                style: .ghost,
+                                size: .small
+                            ) {
+                                addInterval()
+                            }
+                        }
+                        .padding(.horizontal, ComponentConstants.Layout.defaultPadding)
+                        
+                        if intervals.isEmpty {
+                            // Empty state
+                            ContentUnavailableView(
+                                "No Intervals",
+                                systemImage: "rectangle.stack.badge.plus",
+                                description: Text("Tap 'Add Interval' to build your workout")
+                            )
+                            .frame(minHeight: 200)
+                            .padding(.horizontal, ComponentConstants.Layout.defaultPadding)
+                        } else {
+                            // Intervals list
+                            ExpandableList(items: intervals) { interval, index, isExpanded in
+                                IntervalFormCard(
+                                    interval: bindingForInterval(at: index),
+                                    isExpanded: isExpanded,
+                                    intervalNumber: index + 1
+                                ) {
+                                    deleteInterval(at: index)
+                                } onAddExercise: {
+                                    selectedIntervalIndex = index
+                                    showingExercisePicker = true
+                                }
+                            }
+                            .padding(.horizontal, ComponentConstants.Layout.defaultPadding)
+                        }
                     }
                 }
+                .padding(.vertical, ComponentConstants.Layout.defaultPadding)
             }
+            .background(ComponentConstants.Colors.groupedBackground)
             .navigationTitle(workout == nil ? "New Workout" : "Edit Workout")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -54,17 +125,43 @@ struct WorkoutFormView: View {
                     }
                     .disabled(workoutName.isEmpty)
                 }
+                
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    
+                    Button("Done") {
+                        focusedField = nil
+                    }
+                }
             }
             .onAppear {
                 loadWorkoutData()
             }
+            .sheet(isPresented: $showingExercisePicker) {
+                if let index = selectedIntervalIndex {
+                    ExercisePicker(selectedExercise: .constant(nil)) { selected in
+                        addExerciseToInterval(selected, at: index)
+                        showingExercisePicker = false
+                    }
+                }
+            }
         }
     }
+    
+    // MARK: - Helper Methods
     
     private func loadWorkoutData() {
         if let workout = workout {
             workoutName = workout.name
             intervals = workout.intervals
+        } else {
+            // Start with one empty interval for new workouts
+            if intervals.isEmpty {
+                let newInterval = Interval()
+                newInterval.name = "Interval 1"
+                newInterval.rounds = 1
+                intervals.append(newInterval)
+            }
         }
     }
     
@@ -82,160 +179,48 @@ struct WorkoutFormView: View {
         }
         dismiss()
     }
-}
-
-struct IntervalRow: View {
-    @Binding var interval: Interval
-    @State private var isExpanded = true
-    @State private var showingNewExercisePicker = false
     
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Header
-            HStack {
-                TextField("Interval Name", text: Binding(
-                    get: { interval.name ?? "" },
-                    set: { interval.name = $0.isEmpty ? nil : $0 }
-                ))
-                .font(.headline)
-                
-                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                    .foregroundStyle(.secondary)
-                    .onTapGesture {
-                        isExpanded.toggle()
-                    }
-            }
-            
-            if isExpanded {
-                // Rounds
-                HStack {
-                    Text("Rounds")
-                    Spacer()
-                    Stepper("\(interval.rounds)", value: $interval.rounds, in: 1...10)
-                }
-                
-                // Exercises
-                Text("Exercises")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 4)
-                
-                ForEach($interval.exercises) { $exercise in
-                    ExerciseRow(exercise: $exercise)
-                }
-                .onDelete { indices in
-                    interval.exercises.remove(atOffsets: indices)
-                }
-                
-                Button {
-                    showingNewExercisePicker = true
-                } label: {
-                    Label("Add Exercise", systemImage: "plus.circle")
-                }
-                .font(.callout)
-                .padding(.top, 4)
-                .sheet(isPresented: $showingNewExercisePicker) {
-                    ExercisePicker(selectedExercise: .constant(nil)) { selected in
-                        let newExercise = Exercise()
-                        newExercise.exerciseItem = selected
-                        newExercise.trainingMethod = .standard(minReps: 8, maxReps: 12)
-                        interval.exercises.append(newExercise)
-                    }
-                }
-            }
-        }
-        .padding(.vertical, 4)
+    private func addInterval() {
+        let newInterval = Interval()
+        newInterval.name = "Interval \(intervals.count + 1)"
+        newInterval.rounds = 1
+        intervals.append(newInterval)
+    }
+    
+    private func deleteInterval(at index: Int) {
+        guard index < intervals.count else { return }
+        intervals.remove(at: index)
+    }
+    
+    private func addExerciseToInterval(_ exerciseItem: ExerciseItem, at index: Int) {
+        guard index < intervals.count else { return }
+        
+        let newExercise = Exercise.from(
+            exerciseItem: exerciseItem,
+            trainingMethod: .standard(minReps: 8, maxReps: 12),
+            effort: 7
+        )
+        
+        intervals[index].exercises.append(newExercise)
+    }
+    
+    private func bindingForInterval(at index: Int) -> Binding<Interval> {
+        Binding<Interval>(
+            get: { intervals[index] },
+            set: { intervals[index] = $0 }
+        )
     }
 }
 
-struct ExerciseRow: View {
-    @Binding var exercise: Exercise
-    @State private var showingExercisePicker = false
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // Exercise selection button
-            Button {
-                showingExercisePicker = true
-            } label: {
-                HStack {
-                    // GIF thumbnail if available
-                    if let exerciseItem = exercise.exerciseItem,
-                       let gifUrl = exerciseItem.gifUrl {
-                        GifImageView(gifUrl)
-                            .frame(width: 30, height: 30)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                    } else {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(.quaternary.opacity(0.3))
-                            .frame(width: 30, height: 30)
-                            .overlay {
-                                Image(systemName: "plus")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                    }
-                    
-                    // Exercise name or prompt
-                    if let exerciseItem = exercise.exerciseItem {
-                        Text(exerciseItem.name)
-                            .font(.callout)
-                            .foregroundStyle(.primary)
-                    } else {
-                        Text("Select Exercise")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            .buttonStyle(.plain)
-            
-            // Training method info
-            HStack {
-                Text("Effort: \(exercise.effort)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                
-                Spacer()
-                
-                Text(methodDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(.vertical, 4)
-        .sheet(isPresented: $showingExercisePicker) {
-            ExercisePicker(selectedExercise: Binding(
-                get: { exercise.exerciseItem },
-                set: { _ in }
-            )) { selected in
-                exercise.exerciseItem = selected
-            }
-        }
-    }
-    
-    private var methodDescription: String {
-        switch exercise.trainingMethod {
-        case .standard(let minReps, let maxReps):
-            return "\(minReps)-\(maxReps) reps"
-        case .timed(let seconds):
-            return "\(seconds)s"
-        case .restPause(let total, _, _):
-            return "\(total) total"
-        }
-    }
-}
-
+// MARK: - Preview Provider
 #Preview("New Workout", traits: .sampleData) {
     WorkoutFormView(workout: nil)
 }
 
 #Preview("Edit Workout", traits: .sampleData) {
     WorkoutFormView(workout: .previewStrength)
+}
+
+#Preview("Empty Workout", traits: .sampleData) {
+    WorkoutFormView(workout: .previewEmpty)
 }

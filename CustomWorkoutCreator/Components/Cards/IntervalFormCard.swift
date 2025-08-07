@@ -120,11 +120,13 @@ struct IntervalFormCard: View {
                         } else {
                             // Use ExpandableList for exercises within the interval
                             ExpandableList(items: interval.exercises) { exercise, index, exerciseExpanded in
-                                ExerciseFormCard(
-                                    exercise: bindingForExercise(at: index),
-                                    isExpanded: exerciseExpanded
-                                ) {
-                                    deleteExercise(at: index)
+                                if let exerciseBinding = bindingForExercise(id: exercise.id) {
+                                    ExerciseFormCard(
+                                        exercise: exerciseBinding,
+                                        isExpanded: exerciseExpanded
+                                    ) {
+                                        deleteExercise(id: exercise.id)
+                                    }
                                 }
                             }
                             .padding(.horizontal, ComponentConstants.Layout.defaultPadding)
@@ -187,16 +189,31 @@ struct IntervalFormCard: View {
     
     // MARK: - Helper Methods
     
-    private func bindingForExercise(at index: Int) -> Binding<Exercise> {
-        Binding<Exercise>(
-            get: { interval.exercises[index] },
-            set: { interval.exercises[index] = $0 }
+    private func bindingForExercise(id: UUID) -> Binding<Exercise>? {
+        guard interval.exercises.contains(where: { $0.id == id }) else {
+            return nil
+        }
+        
+        return Binding<Exercise>(
+            get: {
+                // Always find fresh index to avoid stale references
+                guard let currentIndex = interval.exercises.firstIndex(where: { $0.id == id }) else {
+                    // This shouldn't happen in normal flow, but provide fallback
+                    return Exercise()
+                }
+                return interval.exercises[currentIndex]
+            },
+            set: { newValue in
+                // Update using fresh index lookup
+                if let currentIndex = interval.exercises.firstIndex(where: { $0.id == id }) {
+                    interval.exercises[currentIndex] = newValue
+                }
+            }
         )
     }
     
-    private func deleteExercise(at index: Int) {
-        guard index < interval.exercises.count else { return }
-        interval.exercises.remove(at: index)
+    private func deleteExercise(id: UUID) {
+        interval.exercises.removeAll(where: { $0.id == id })
     }
 }
 

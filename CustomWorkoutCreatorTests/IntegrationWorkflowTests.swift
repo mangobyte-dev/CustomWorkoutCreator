@@ -134,9 +134,6 @@ struct IntegrationWorkflowTests {
         #expect(workout.intervals.first?.exercises.first?.effort == 10)
     }
     
-    // MARK: - Exercise Library Integration
-    
-    @Test("Exercise library search and selection")
     
     // MARK: - Bulk Operations
     
@@ -350,7 +347,5 @@ struct IntegrationWorkflowTests {
         }
     }
     
-    // MARK: - Performance Under Load
     
-    @Test("Workflow performance with large dataset", .tags(.performance))
 }

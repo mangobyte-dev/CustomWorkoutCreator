@@ -25,21 +25,6 @@ struct ComponentTests {
         #expect(row.value == "Test Value")
     }
     
-    @Test("ActionButton component with action closure")
-    
-    @Test("SectionHeader component configuration")
-    
-    // MARK: - Input Components
-    
-    @Test("NumberInputRow with binding")
-    @MainActor
-    
-    @Test("RangeInputRow with min/max values")
-    @MainActor
-    
-    @Test("TimeInputRow with seconds conversion")
-    @MainActor
-    
     @Test("EffortSliderRow with 1-10 range")
     @MainActor
     func effortSliderRow() {
@@ -267,8 +252,6 @@ struct ComponentTests {
     }
     
     // MARK: - Performance Tests
-    
-    @Test("Component creation performance", .tags(.performance))
     
     @Test("Component state update performance", .tags(.performance))
     @MainActor

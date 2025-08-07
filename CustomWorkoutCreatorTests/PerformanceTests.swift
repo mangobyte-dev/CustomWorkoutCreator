@@ -228,11 +228,6 @@ struct PerformanceTests {
         #expect(results.count <= 7) // At most 7 days
     }
     
-    @Test("Relationship traversal performance")
-    
-    // MARK: - Memory Performance
-    
-    @Test("Memory efficient large dataset handling")
     
     // MARK: - UI Responsiveness
     

@@ -92,15 +92,20 @@ struct WorkoutFormView: View {
                         } else {
                             // Intervals list
                             ExpandableList(items: intervals) { interval, index, isExpanded in
-                                IntervalFormCard(
-                                    interval: bindingForInterval(at: index),
-                                    isExpanded: isExpanded,
-                                    intervalNumber: index + 1
-                                ) {
-                                    deleteInterval(at: index)
-                                } onAddExercise: {
-                                    selectedIntervalIndex = index
-                                    showingExercisePicker = true
+                                if let intervalBinding = bindingForInterval(id: interval.id) {
+                                    IntervalFormCard(
+                                        interval: intervalBinding,
+                                        isExpanded: isExpanded,
+                                        intervalNumber: index + 1
+                                    ) {
+                                        deleteInterval(id: interval.id)
+                                    } onAddExercise: {
+                                        // Use fresh index lookup for adding exercises
+                                        if let currentIndex = intervals.firstIndex(where: { $0.id == interval.id }) {
+                                            selectedIntervalIndex = currentIndex
+                                            showingExercisePicker = true
+                                        }
+                                    }
                                 }
                             }
                             .padding(.horizontal, ComponentConstants.Layout.defaultPadding)
@@ -187,9 +192,8 @@ struct WorkoutFormView: View {
         intervals.append(newInterval)
     }
     
-    private func deleteInterval(at index: Int) {
-        guard index < intervals.count else { return }
-        intervals.remove(at: index)
+    private func deleteInterval(id: UUID) {
+        intervals.removeAll(where: { $0.id == id })
     }
     
     private func addExerciseToInterval(_ exerciseItem: ExerciseItem, at index: Int) {
@@ -204,10 +208,26 @@ struct WorkoutFormView: View {
         intervals[index].exercises.append(newExercise)
     }
     
-    private func bindingForInterval(at index: Int) -> Binding<Interval> {
-        Binding<Interval>(
-            get: { intervals[index] },
-            set: { intervals[index] = $0 }
+    private func bindingForInterval(id: UUID) -> Binding<Interval>? {
+        guard intervals.contains(where: { $0.id == id }) else {
+            return nil
+        }
+        
+        return Binding<Interval>(
+            get: {
+                // Always find fresh index to avoid stale references
+                guard let currentIndex = intervals.firstIndex(where: { $0.id == id }) else {
+                    // This shouldn't happen in normal flow, but provide fallback
+                    return Interval()
+                }
+                return intervals[currentIndex]
+            },
+            set: { newValue in
+                // Update using fresh index lookup
+                if let currentIndex = intervals.firstIndex(where: { $0.id == id }) {
+                    intervals[currentIndex] = newValue
+                }
+            }
         )
     }
 }

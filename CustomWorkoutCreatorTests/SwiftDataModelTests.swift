@@ -186,16 +186,6 @@ struct SwiftDataModelTests {
         #expect(slowTempo.notation == "3-1-3")
     }
     
-    // MARK: - Relationship Tests
-    
-    @Test("Bidirectional relationships maintained")
-    
-    // MARK: - Performance Tests
-    
-    @Test("Bulk insert performance", .tags(.performance))
-    
-    @Test("Large dataset query performance", .tags(.performance))
-    
     // MARK: - Data Integrity Tests
     
     @Test("Exercise effort bounds validation")

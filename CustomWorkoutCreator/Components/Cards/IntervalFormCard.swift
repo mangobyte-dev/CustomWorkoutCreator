@@ -8,6 +8,12 @@ struct IntervalFormCard: View {
     let onDelete: () -> Void
     let onAddExercise: () -> Void
     
+    // Sheet presentation state for exercise editing
+    @State private var editingExerciseID: UUID?
+    
+    // Stable rounds value to prevent stepper value from disappearing
+    @State private var roundsValue: Int = 1
+    
     // Pre-computed static values following CLAUDE.md performance principles
     private static let headerSpacing: CGFloat = 12
     private static let expandedContentSpacing: CGFloat = 1
@@ -62,7 +68,7 @@ struct IntervalFormCard: View {
                     // Rounds configuration
                     NumberInputRow(
                         title: "Rounds",
-                        value: $interval.rounds,
+                        value: stableRoundsBinding,
                         range: 1...20,
                         icon: "repeat",
                         position: .first
@@ -118,15 +124,21 @@ struct IntervalFormCard: View {
                             .frame(minHeight: Self.minExercisesHeight)
                             .padding()
                         } else {
-                            // Use ExpandableList for exercises within the interval
-                            ExpandableList(items: interval.exercises) { exercise, index, exerciseExpanded in
-                                if let exerciseBinding = bindingForExercise(id: exercise.id) {
-                                    ExerciseFormCard(
-                                        exercise: exerciseBinding,
-                                        isExpanded: exerciseExpanded
-                                    ) {
-                                        deleteExercise(id: exercise.id)
-                                    }
+                            // Exercise list using ExerciseListRow
+                            VStack(spacing: ComponentConstants.Layout.compactPadding) {
+                                ForEach(interval.exercises, id: \.id) { exercise in
+                                    ExerciseListRow(
+                                        exercise: exercise,
+                                        onTap: {
+                                            editingExerciseID = exercise.id
+                                        },
+                                        onDuplicate: {
+                                            duplicateExercise(id: exercise.id)
+                                        },
+                                        onDelete: {
+                                            deleteExercise(id: exercise.id)
+                                        }
+                                    )
                                 }
                             }
                             .padding(.horizontal, ComponentConstants.Layout.defaultPadding)
@@ -151,6 +163,32 @@ struct IntervalFormCard: View {
                 }
             }
         )
+        .onAppear {
+            // Initialize stable rounds value
+            roundsValue = interval.rounds
+        }
+        .onChange(of: interval.rounds) { _, newValue in
+            // Sync stable rounds when interval changes externally
+            if roundsValue != newValue {
+                roundsValue = newValue
+            }
+        }
+        .sheet(item: Binding<EditingExercise?>(
+            get: {
+                guard let id = editingExerciseID,
+                      let exercise = interval.exercises.first(where: { $0.id == id }) else {
+                    return nil
+                }
+                return EditingExercise(id: id, exercise: exercise)
+            },
+            set: { _ in
+                editingExerciseID = nil
+            }
+        )) { editingExercise in
+            if let exerciseBinding = bindingForExercise(id: editingExercise.id) {
+                ExerciseEditSheet(exercise: exerciseBinding)
+            }
+        }
     }
     
     // MARK: - Computed Properties
@@ -166,6 +204,16 @@ struct IntervalFormCard: View {
         Binding<String>(
             get: { interval.name ?? "" },
             set: { interval.name = $0.isEmpty ? nil : $0 }
+        )
+    }
+    
+    private var stableRoundsBinding: Binding<Int> {
+        Binding<Int>(
+            get: { roundsValue },
+            set: { newValue in
+                roundsValue = newValue
+                interval.rounds = newValue
+            }
         )
     }
     
@@ -213,8 +261,45 @@ struct IntervalFormCard: View {
     }
     
     private func deleteExercise(id: UUID) {
-        interval.exercises.removeAll(where: { $0.id == id })
+        withAnimation(.smooth(duration: 0.3)) {
+            interval.exercises.removeAll(where: { $0.id == id })
+        }
     }
+    
+    private func duplicateExercise(id: UUID) {
+        guard let originalExercise = interval.exercises.first(where: { $0.id == id }) else {
+            return
+        }
+        
+        withAnimation(.smooth(duration: 0.3)) {
+            // Create a copy with all properties preserved
+            let duplicatedExercise = Exercise(
+                exerciseItem: originalExercise.exerciseItem ?? ExerciseItem(name: "Unknown Exercise", gifUrl: nil),
+                trainingMethod: originalExercise.trainingMethod,
+                effort: originalExercise.effort
+            )
+            
+            // Copy additional properties
+            duplicatedExercise.weight = originalExercise.weight
+            duplicatedExercise.restAfter = originalExercise.restAfter
+            duplicatedExercise.tempo = originalExercise.tempo
+            duplicatedExercise.notes = originalExercise.notes
+            
+            // Find the index to insert after the original
+            if let originalIndex = interval.exercises.firstIndex(where: { $0.id == id }) {
+                interval.exercises.insert(duplicatedExercise, at: originalIndex + 1)
+            } else {
+                // Fallback: append to end
+                interval.exercises.append(duplicatedExercise)
+            }
+        }
+    }
+}
+
+// MARK: - EditingExercise Identifiable Wrapper
+private struct EditingExercise: Identifiable {
+    let id: UUID
+    let exercise: Exercise
 }
 
 // MARK: - Badge Component (reused from IntervalCard)
@@ -342,57 +427,79 @@ extension IntervalFormCard: Equatable {
 }
 
 #Preview("Multiple Intervals") {
-    @Previewable @State var intervals = [
-        Interval(
-            name: "Warm-up",
-            exercises: [
-                Exercise(
-                    exerciseItem: ExerciseItem(name: "Jumping Jacks", gifUrl: nil),
-                    trainingMethod: .timed(seconds: 30),
-                    effort: 5
-                )
-            ],
-            rounds: 1,
-            restBetweenRounds: 0
-        ),
-        Interval(
-            name: "Main Circuit",
-            exercises: [
-                Exercise(
-                    exerciseItem: ExerciseItem(name: "Push-ups", gifUrl: nil),
-                    trainingMethod: .standard(minReps: 10, maxReps: 15),
-                    effort: 7
-                ),
-                Exercise(
-                    exerciseItem: ExerciseItem(name: "Squats", gifUrl: nil),
-                    trainingMethod: .standard(minReps: 15, maxReps: 20),
-                    effort: 6
-                )
-            ],
-            rounds: 3,
-            restBetweenRounds: 60
-        ),
-        Interval(
-            name: nil,
-            exercises: [],
-            rounds: 2,
-            restBetweenRounds: 30
-        )
-    ]
-    
-    ScrollView {
-        ExpandableList(items: intervals) { interval, index, isExpanded in
-            IntervalFormCard(
-                interval: .constant(interval),
-                isExpanded: isExpanded,
-                intervalNumber: index + 1
-            ) {
-                print("Delete interval at index \(index)")
-            } onAddExercise: {
-                print("Add exercise to interval at index \(index)")
+    struct PreviewWrapper: View {
+        @State private var intervals = [
+            Interval(
+                name: "Warm-up",
+                exercises: [
+                    Exercise(
+                        exerciseItem: ExerciseItem(name: "Jumping Jacks", gifUrl: nil),
+                        trainingMethod: .timed(seconds: 30),
+                        effort: 5
+                    )
+                ],
+                rounds: 1,
+                restBetweenRounds: 0
+            ),
+            Interval(
+                name: "Main Circuit",
+                exercises: [
+                    Exercise(
+                        exerciseItem: ExerciseItem(name: "Push-ups", gifUrl: nil),
+                        trainingMethod: .standard(minReps: 10, maxReps: 15),
+                        effort: 7
+                    ),
+                    Exercise(
+                        exerciseItem: ExerciseItem(name: "Squats", gifUrl: nil),
+                        trainingMethod: .standard(minReps: 15, maxReps: 20),
+                        effort: 6
+                    )
+                ],
+                rounds: 3,
+                restBetweenRounds: 60
+            ),
+            Interval(
+                name: nil,
+                exercises: [],
+                rounds: 2,
+                restBetweenRounds: 30
+            )
+        ]
+        @State private var expandedStates = [true, false, false]
+        
+        var body: some View {
+            ScrollView {
+                VStack(spacing: 16) {
+                    ForEach(intervals.indices, id: \.self) { index in
+                        IntervalFormCard(
+                            interval: bindingForInterval(at: index),
+                            isExpanded: $expandedStates[index],
+                            intervalNumber: index + 1
+                        ) {
+                            print("Delete interval at index \(index)")
+                        } onAddExercise: {
+                            let newExercise = Exercise(
+                                exerciseItem: ExerciseItem(name: "New Exercise", gifUrl: nil),
+                                trainingMethod: .standard(minReps: 8, maxReps: 12),
+                                effort: 7
+                            )
+                            intervals[index].exercises.append(newExercise)
+                        }
+                        .animation(.spring(), value: intervals[index].exercises.count)
+                    }
+                }
+                .padding()
             }
+            .background(ComponentConstants.Colors.groupedBackground)
         }
-        .padding()
+        
+        private func bindingForInterval(at index: Int) -> Binding<Interval> {
+            return Binding<Interval>(
+                get: { intervals[index] },
+                set: { intervals[index] = $0 }
+            )
+        }
     }
-    .background(ComponentConstants.Colors.groupedBackground)
+    
+    return PreviewWrapper()
 }

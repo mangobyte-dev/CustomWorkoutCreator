@@ -11,37 +11,7 @@ struct TrainingMethodPicker: View {
     @Binding var timedDuration: Int
     @Binding var restPauseMinisets: Int
     
-    // Pre-computed static values following CLAUDE.md performance principles
-    static let segmentedPickerHeight: CGFloat = 32
-    static let descriptionTopPadding: CGFloat = 8
-    static let inputsTopPadding: CGFloat = 12
-    static let transitionDuration: Double = 0.3
-    static let springAnimation: Animation = .spring(response: 0.4, dampingFraction: 0.8)
-    
-    // Static method information to avoid runtime allocations
-    private static let methodInfo: [TrainingMethodType: (title: String, description: String)] = [
-        .standard: (
-            title: "Standard",
-            description: "Traditional rep ranges with minimum and maximum targets"
-        ),
-        .restPause: (
-            title: "Rest-Pause",
-            description: "Reach target total reps using multiple mini-sets with short rests"
-        ),
-        .timed: (
-            title: "Timed",
-            description: "Perform exercise for a specific duration rather than counting reps"
-        )
-    ]
-    
-    // Helper enum for consistent method handling
-    private enum TrainingMethodType: String, CaseIterable {
-        case standard = "Standard"
-        case restPause = "Rest-Pause"
-        case timed = "Timed"
-    }
-    
-    @State private var selectedMethodType: TrainingMethodType = .standard
+    @State private var selectedMethodType: TrainingMethodUtilities.TrainingMethodType = .standard
     
     init(
         trainingMethod: Binding<TrainingMethod>,
@@ -59,22 +29,22 @@ struct TrainingMethodPicker: View {
         self._restPauseMinisets = restPauseMinisets
         
         // Initialize selected method type based on current training method
-        self._selectedMethodType = State(initialValue: Self.methodTypeFromTrainingMethod(trainingMethod.wrappedValue))
+        self._selectedMethodType = State(initialValue: TrainingMethodUtilities.TrainingMethodType.from(trainingMethod.wrappedValue))
     }
     
     var body: some View {
         VStack(spacing: 0) {
             // Method Selection Picker
-            VStack(spacing: Self.descriptionTopPadding) {
+            VStack(spacing: ComponentConstants.TrainingMethod.descriptionTopPadding) {
                 // Segmented Control
                 Picker("Training Method", selection: $selectedMethodType) {
-                    ForEach(TrainingMethodType.allCases, id: \.self) { methodType in
+                    ForEach(TrainingMethodUtilities.TrainingMethodType.allCases, id: \.self) { methodType in
                         Text(methodType.rawValue)
                             .tag(methodType)
                     }
                 }
                 .pickerStyle(.segmented)
-                .frame(height: Self.segmentedPickerHeight)
+                .frame(height: ComponentConstants.TrainingMethod.segmentedPickerHeight)
                 .onChange(of: selectedMethodType) { oldValue, newValue in
                     updateTrainingMethod(for: newValue)
                 }
@@ -111,17 +81,14 @@ struct TrainingMethodPicker: View {
     
     @ViewBuilder
     private var methodDescriptionView: some View {
-        if let info = Self.methodInfo[selectedMethodType] {
+        if let info = TrainingMethodUtilities.methodInfo[selectedMethodType] {
             Text(info.description)
                 .font(ComponentConstants.Row.subtitleFont)
                 .foregroundColor(ComponentConstants.Row.secondaryTextColor)
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .transition(.asymmetric(
-                    insertion: .scale(scale: 0.8).combined(with: .opacity),
-                    removal: .scale(scale: 0.8).combined(with: .opacity)
-                ))
-                .animation(Self.springAnimation, value: selectedMethodType)
+                .transition(ComponentConstants.TrainingMethod.descriptionTransition)
+                .animation(ComponentConstants.TrainingMethod.springAnimation, value: selectedMethodType)
         }
     }
     
@@ -139,11 +106,8 @@ struct TrainingMethodPicker: View {
                 timedInputFields
             }
         }
-        .transition(.asymmetric(
-            insertion: .scale(scale: 0.95).combined(with: .opacity),
-            removal: .scale(scale: 0.95).combined(with: .opacity)
-        ))
-        .animation(Self.springAnimation, value: selectedMethodType)
+        .transition(ComponentConstants.TrainingMethod.inputFieldsTransition)
+        .animation(ComponentConstants.TrainingMethod.springAnimation, value: selectedMethodType)
     }
     
     @ViewBuilder
@@ -152,9 +116,9 @@ struct TrainingMethodPicker: View {
             title: "Rep Range",
             minValue: $standardMinReps,
             maxValue: $standardMaxReps,
-            range: 1...100,
-            unit: "reps",
-            icon: "arrow.clockwise",
+            range: ComponentConstants.TrainingMethod.repRange,
+            unit: ComponentConstants.TrainingMethod.repsUnit,
+            icon: ComponentConstants.TrainingMethod.standardIcon,
             position: .last
         )
     }
@@ -164,10 +128,10 @@ struct TrainingMethodPicker: View {
         NumberInputRow(
             title: "Target Total Reps",
             value: $restPauseMinisets,
-            range: 5...200,
-            step: 5,
-            unit: "reps",
-            icon: "target",
+            range: ComponentConstants.TrainingMethod.restPauseRange,
+            step: ComponentConstants.TrainingMethod.restPauseStep,
+            unit: ComponentConstants.TrainingMethod.repsUnit,
+            icon: ComponentConstants.TrainingMethod.restPauseIcon,
             position: .last
         )
     }
@@ -177,37 +141,25 @@ struct TrainingMethodPicker: View {
         TimeInputRow(
             title: "Duration",
             seconds: $timedDuration,
-            maxMinutes: 10,
-            secondsStep: 5,
+            maxMinutes: ComponentConstants.TrainingMethod.timedMaxMinutes,
+            secondsStep: ComponentConstants.TrainingMethod.timedSecondsStep,
             showPresets: true,
-            icon: "timer",
+            icon: ComponentConstants.TrainingMethod.timedIcon,
             position: .last
         )
     }
     
     // MARK: - Helper Methods
     
-    private static func methodTypeFromTrainingMethod(_ trainingMethod: TrainingMethod) -> TrainingMethodType {
-        switch trainingMethod {
-        case .standard:
-            return .standard
-        case .restPause:
-            return .restPause
-        case .timed:
-            return .timed
-        }
-    }
-    
-    private func updateTrainingMethod(for methodType: TrainingMethodType) {
-        withAnimation(Self.springAnimation) {
-            switch methodType {
-            case .standard:
-                trainingMethod = .standard(minReps: standardMinReps, maxReps: standardMaxReps)
-            case .restPause:
-                trainingMethod = .restPause(targetTotal: restPauseMinisets, minReps: 5, maxReps: 10)
-            case .timed:
-                trainingMethod = .timed(seconds: timedDuration)
-            }
+    private func updateTrainingMethod(for methodType: TrainingMethodUtilities.TrainingMethodType) {
+        withAnimation(ComponentConstants.TrainingMethod.springAnimation) {
+            let decomposedValues = TrainingMethodUtilities.DecomposedValues(
+                standardMinReps: standardMinReps,
+                standardMaxReps: standardMaxReps,
+                timedDuration: timedDuration,
+                restPauseMinisets: restPauseMinisets
+            )
+            trainingMethod = TrainingMethodUtilities.construct(type: methodType, from: decomposedValues)
         }
     }
 }

@@ -263,6 +263,51 @@ enum ComponentConstants {
         static let sectionSpacing: CGFloat = 20
     }
     
+    // MARK: - TrainingMethod Constants
+    enum TrainingMethod {
+        // Animation constants for TrainingMethod transitions
+        static let transitionDuration: Double = 0.3
+        static let springResponse: Double = 0.4
+        static let springDamping: Double = 0.8
+        static let springAnimation: SwiftUI.Animation = .spring(response: springResponse, dampingFraction: springDamping)
+        
+        // Segmented control constants
+        static let segmentedPickerHeight: CGFloat = 32
+        static let descriptionTopPadding: CGFloat = 8
+        static let inputsTopPadding: CGFloat = 12
+        
+        // Transition animations for smooth method switching
+        static let descriptionTransition: AnyTransition = .asymmetric(
+            insertion: .scale(scale: 0.8).combined(with: .opacity),
+            removal: .scale(scale: 0.8).combined(with: .opacity)
+        )
+        
+        static let inputFieldsTransition: AnyTransition = .asymmetric(
+            insertion: .scale(scale: 0.95).combined(with: .opacity),
+            removal: .scale(scale: 0.95).combined(with: .opacity)
+        )
+        
+        // Default parameter ranges and steps
+        static let repRange: ClosedRange<Int> = 1...100
+        static let restPauseRange: ClosedRange<Int> = 5...200
+        static let restPauseStep: Int = 5
+        static let timedMaxMinutes: Int = 10
+        static let timedSecondsStep: Int = 5
+        
+        // Default rest-pause parameters (consistent across components)
+        static let defaultRestPauseMinReps: Int = 5
+        static let defaultRestPauseMaxReps: Int = 10
+        
+        // Units and labels
+        static let repsUnit: String = "reps"
+        static let timeUnit: String = "seconds"
+        
+        // Icons for different method types
+        static let standardIcon: String = "arrow.clockwise"
+        static let restPauseIcon: String = "target"
+        static let timedIcon: String = "timer"
+    }
+    
     // MARK: - Global Color Constants
     enum Colors {
         static let primaryBackground: Color = Color(UIColor.systemBackground)

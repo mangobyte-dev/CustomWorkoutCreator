@@ -9,23 +9,13 @@ struct ExerciseEditSheet: View {
     @State private var showingExercisePicker = false
     
     // Decomposed storage for TrainingMethod to avoid SwiftData crashes
-    @State private var standardMinReps: Int = 8
-    @State private var standardMaxReps: Int = 12
-    @State private var timedDuration: Int = 45
-    @State private var restPauseMinisets: Int = 20
+    @State private var decomposedValues = TrainingMethodUtilities.DecomposedValues()
     
     // Track if changes were made
     @State private var originalExercise: Exercise?
     
     // Prevent full view rerenders by isolating training method changes
-    @State private var trainingMethodType: TrainingMethodType = .standard
-    
-    // Helper enum for training method types
-    private enum TrainingMethodType: String, CaseIterable {
-        case standard = "Standard"
-        case restPause = "Rest-Pause"
-        case timed = "Timed"
-    }
+    @State private var trainingMethodType: TrainingMethodUtilities.TrainingMethodType = .standard
     
     var body: some View {
         NavigationStack {
@@ -71,10 +61,7 @@ struct ExerciseEditSheet: View {
                     // Training Method Section
                     TrainingMethodSection(
                         exercise: $exercise,
-                        standardMinReps: $standardMinReps,
-                        standardMaxReps: $standardMaxReps,
-                        timedDuration: $timedDuration,
-                        restPauseMinisets: $restPauseMinisets
+                        decomposedValues: $decomposedValues
                     )
                     
                     // Effort Level Section
@@ -129,6 +116,10 @@ struct ExerciseEditSheet: View {
                     }
                 }
                 .padding(.vertical)
+                .safeAreaInset(edge: .bottom) {
+                    // Add safe area padding for bottom content
+                    Color.clear.frame(height: 20)
+                }
             }
             .background(ComponentConstants.Colors.groupedBackground)
             .navigationTitle("Edit Exercise")
@@ -152,11 +143,14 @@ struct ExerciseEditSheet: View {
                 }
             }
         }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(20)
         .onAppear {
             // Store original for cancel
             originalExercise = exercise
             syncDecomposedValues()
-            trainingMethodType = trainingMethodTypeFromMethod(exercise.trainingMethod)
+            trainingMethodType = TrainingMethodUtilities.TrainingMethodType.from(exercise.trainingMethod)
         }
         .sheet(isPresented: $showingExercisePicker) {
             ExercisePicker(selectedExercise: .constant(nil)) { selectedItem in
@@ -182,30 +176,7 @@ struct ExerciseEditSheet: View {
     // MARK: - Helper Methods
     
     private func syncDecomposedValues() {
-        updateDecomposedValues(from: exercise.trainingMethod)
-    }
-    
-    private func updateDecomposedValues(from method: TrainingMethod) {
-        switch method {
-        case let .standard(minReps, maxReps):
-            standardMinReps = minReps
-            standardMaxReps = maxReps
-        case let .restPause(targetTotal, _, _):
-            restPauseMinisets = targetTotal
-        case let .timed(seconds):
-            timedDuration = seconds
-        }
-    }
-    
-    private func trainingMethodTypeFromMethod(_ method: TrainingMethod) -> TrainingMethodType {
-        switch method {
-        case .standard:
-            return .standard
-        case .restPause:
-            return .restPause
-        case .timed:
-            return .timed
-        }
+        decomposedValues.update(from: exercise.trainingMethod)
     }
 }
 
@@ -213,10 +184,7 @@ struct ExerciseEditSheet: View {
 // This component isolates training method changes to prevent parent view rerenders
 private struct TrainingMethodSection: View {
     @Binding var exercise: Exercise
-    @Binding var standardMinReps: Int
-    @Binding var standardMaxReps: Int
-    @Binding var timedDuration: Int
-    @Binding var restPauseMinisets: Int
+    @Binding var decomposedValues: TrainingMethodUtilities.DecomposedValues
     
     var body: some View {
         VStack(spacing: 1) {
@@ -225,34 +193,22 @@ private struct TrainingMethodSection: View {
             TrainingMethodPicker(
                 trainingMethod: trainingMethodBinding,
                 showDescription: true,
-                standardMinReps: $standardMinReps,
-                standardMaxReps: $standardMaxReps,
-                timedDuration: $timedDuration,
-                restPauseMinisets: $restPauseMinisets
+                standardMinReps: $decomposedValues.standardMinReps,
+                standardMaxReps: $decomposedValues.standardMaxReps,
+                timedDuration: $decomposedValues.timedDuration,
+                restPauseMinisets: $decomposedValues.restPauseMinisets
             )
         }
     }
     
     private var trainingMethodBinding: Binding<TrainingMethod> {
-        Binding<TrainingMethod>(
-            get: { exercise.trainingMethod },
-            set: { newMethod in
-                exercise.trainingMethod = newMethod
-                updateDecomposedValues(from: newMethod)
-            }
+        TrainingMethodUtilities.createSyncedBinding(
+            trainingMethod: Binding<TrainingMethod>(
+                get: { exercise.trainingMethod },
+                set: { exercise.trainingMethod = $0 }
+            ),
+            decomposedValues: $decomposedValues
         )
-    }
-    
-    private func updateDecomposedValues(from method: TrainingMethod) {
-        switch method {
-        case let .standard(minReps, maxReps):
-            standardMinReps = minReps
-            standardMaxReps = maxReps
-        case let .restPause(targetTotal, _, _):
-            restPauseMinisets = targetTotal
-        case let .timed(seconds):
-            timedDuration = seconds
-        }
     }
 }
 

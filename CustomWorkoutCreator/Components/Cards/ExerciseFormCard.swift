@@ -9,10 +9,7 @@ struct ExerciseFormCard: View {
     
     // Decomposed storage for TrainingMethod to avoid SwiftData crashes
     // Synced with exercise.trainingMethod
-    @State private var standardMinReps: Int = 8
-    @State private var standardMaxReps: Int = 12
-    @State private var timedDuration: Int = 45
-    @State private var restPauseMinisets: Int = 20
+    @State private var decomposedValues = TrainingMethodUtilities.DecomposedValues()
     
     // Pre-computed static values following CLAUDE.md performance principles
     private static let thumbnailSize: CGSize = CGSize(width: 40, height: 40)
@@ -51,10 +48,10 @@ struct ExerciseFormCard: View {
                 TrainingMethodPicker(
                     trainingMethod: trainingMethodBinding,
                     showDescription: false,
-                    standardMinReps: $standardMinReps,
-                    standardMaxReps: $standardMaxReps,
-                    timedDuration: $timedDuration,
-                    restPauseMinisets: $restPauseMinisets
+                    standardMinReps: $decomposedValues.standardMinReps,
+                    standardMaxReps: $decomposedValues.standardMaxReps,
+                    timedDuration: $decomposedValues.timedDuration,
+                    restPauseMinisets: $decomposedValues.restPauseMinisets
                 )
                 
                 // Effort level slider
@@ -121,32 +118,19 @@ struct ExerciseFormCard: View {
     
     // Custom binding that updates decomposed values when TrainingMethod changes
     private var trainingMethodBinding: Binding<TrainingMethod> {
-        Binding<TrainingMethod>(
-            get: { exercise.trainingMethod },
-            set: { newMethod in
-                exercise.trainingMethod = newMethod
-                // Update decomposed values to keep them in sync
-                updateDecomposedValues(from: newMethod)
-            }
+        TrainingMethodUtilities.createSyncedBinding(
+            trainingMethod: Binding<TrainingMethod>(
+                get: { exercise.trainingMethod },
+                set: { exercise.trainingMethod = $0 }
+            ),
+            decomposedValues: $decomposedValues
         )
     }
     
     // MARK: - Helper Methods
     
     private func syncDecomposedValues() {
-        updateDecomposedValues(from: exercise.trainingMethod)
-    }
-    
-    private func updateDecomposedValues(from method: TrainingMethod) {
-        switch method {
-        case let .standard(minReps, maxReps):
-            standardMinReps = minReps
-            standardMaxReps = maxReps
-        case let .restPause(targetTotal, _, _):
-            restPauseMinisets = targetTotal
-        case let .timed(seconds):
-            timedDuration = seconds
-        }
+        decomposedValues.update(from: exercise.trainingMethod)
     }
 }
 

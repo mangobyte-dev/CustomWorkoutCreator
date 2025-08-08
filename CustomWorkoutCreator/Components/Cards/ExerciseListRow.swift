@@ -18,20 +18,12 @@ struct ExerciseListRow: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            // GIF thumbnail (if available)
-            if let gifUrl = exercise.exerciseItem?.gifUrl {
-                GifImageView(gifUrl)
-                    .frame(width: Self.thumbnailSize, height: Self.thumbnailSize)
-                    .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius))
-            } else {
-                // Placeholder icon when no GIF
-                Image(systemName: "figure.run")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .frame(width: Self.thumbnailSize, height: Self.thumbnailSize)
-                    .background(Color(.tertiarySystemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius))
-            }
+            // GIF thumbnail - Using stable component
+            StableExerciseThumbnail(
+                exerciseItem: exercise.exerciseItem,
+                size: Self.thumbnailSize,
+                cornerRadius: Self.cornerRadius
+            )
             
             // Exercise name
             Text(exercise.name)

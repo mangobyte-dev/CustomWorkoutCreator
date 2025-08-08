@@ -28,12 +28,8 @@ struct ExerciseEditSheet: View {
                         // Exercise display with change button
                         Row(position: .only) {
                             HStack(spacing: 12) {
-                                // GIF thumbnail
-                                if let gifUrl = exercise.exerciseItem?.gifUrl {
-                                    GifImageView(gifUrl)
-                                        .frame(width: 40, height: 40)
-                                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                                }
+                                // GIF thumbnail - Using stable component to prevent recreating
+                                StableExerciseThumbnail(exerciseItem: exercise.exerciseItem)
                                 
                                 // Exercise name
                                 VStack(alignment: .leading, spacing: 2) {

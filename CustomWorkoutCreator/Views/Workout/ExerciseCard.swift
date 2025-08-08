@@ -123,6 +123,15 @@ struct ExerciseCard: View {
         }
     }
     
+    @ViewBuilder
+    private var exerciseGifView: some View {
+        if let gifName = exerciseGifName {
+            GifImageView(gifName)
+                .frame(height: 120)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+    }
+    
     // MARK: - Static Grid Layout Constants
     private static let gridVerticalSpacing: CGFloat = 4.0
     
@@ -253,12 +262,8 @@ struct ExerciseCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Exercise GIF (if available)
-            if let gifName = exerciseGifName {
-                GifImageView(gifName)
-                    .frame(height: 120)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
+            // Exercise GIF
+            exerciseGifView
             
             // Exercise Name and Effort
             HStack {

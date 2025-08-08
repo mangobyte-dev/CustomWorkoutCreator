@@ -33,12 +33,8 @@ struct ExerciseFormCard: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    // GIF Thumbnail
-                    if let gifUrl = exercise.exerciseItem?.gifUrl {
-                        GifImageView(gifUrl)
-                            .frame(width: Self.thumbnailSize.width, height: Self.thumbnailSize.height)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                    }
+                    // GIF Thumbnail - Using stable component to prevent recreating
+                    StableExerciseThumbnail(exerciseItem: exercise.exerciseItem)
                 }
         },
         content: {

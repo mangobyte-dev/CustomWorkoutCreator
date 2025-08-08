@@ -139,26 +139,31 @@ struct ExercisePicker: View {
     }
     
     @ViewBuilder
+    private func exerciseThumbnail(for item: ExerciseItem) -> some View {
+        if let gifUrl = item.gifUrl, model.hasGif(for: item) {
+            GifImageView(gifUrl)
+                .frame(width: 40, height: 40)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+        } else {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(.quaternary.opacity(0.3))
+                .frame(width: 40, height: 40)
+                .overlay {
+                    Image(systemName: "figure.strengthtraining.traditional")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
+        }
+    }
+    
+    @ViewBuilder
     private func exerciseRow(for item: ExerciseItem) -> some View {
         Button {
             selectExercise(item)
         } label: {
             HStack(spacing: 12) {
                 // GIF thumbnail
-                if let gifUrl = item.gifUrl, model.hasGif(for: item) {
-                    GifImageView(gifUrl)
-                        .frame(width: 40, height: 40)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                } else {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(.quaternary.opacity(0.3))
-                        .frame(width: 40, height: 40)
-                        .overlay {
-                            Image(systemName: "figure.strengthtraining.traditional")
-                                .foregroundStyle(.secondary)
-                                .font(.caption)
-                        }
-                }
+                exerciseThumbnail(for: item)
                 
                 // Exercise name
                 Text(item.name)

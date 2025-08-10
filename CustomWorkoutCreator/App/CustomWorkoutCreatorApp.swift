@@ -1,12 +1,4 @@
-//
-//  CustomWorkoutCreatorApp.swift
-//  CustomWorkoutCreator
-//
-//  Created by Developer on 16/07/2025.
-//
-
 import SwiftUI
-import SwiftData
 
 @main
 struct CustomWorkoutCreatorApp: App {
@@ -14,6 +6,5 @@ struct CustomWorkoutCreatorApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: [Workout.self, ExerciseItem.self])
     }
 }

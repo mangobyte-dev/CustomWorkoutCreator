@@ -23,18 +23,12 @@
 /* Begin PBXFileReference section */
 		8B350D6F2E279F9900D93F3F /* CustomWorkoutCreator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CustomWorkoutCreator.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8B350D882E27B84200D93F3F /* CustomWorkoutCreatorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CustomWorkoutCreatorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		8B7B61EB2E3A11B80078A766 /* CustomWorkoutCreator.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = CustomWorkoutCreator.xctestplan; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8B350D712E279F9900D93F3F /* CustomWorkoutCreator */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = CustomWorkoutCreator;
-			sourceTree = "<group>";
-		};
-		8B350D892E27B84200D93F3F /* CustomWorkoutCreatorTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = CustomWorkoutCreatorTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -61,9 +55,7 @@
 		8B350D662E279F9900D93F3F = {
 			isa = PBXGroup;
 			children = (
-				8B7B61EB2E3A11B80078A766 /* CustomWorkoutCreator.xctestplan */,
 				8B350D712E279F9900D93F3F /* CustomWorkoutCreator */,
-				8B350D892E27B84200D93F3F /* CustomWorkoutCreatorTests */,
 				8B350D702E279F9900D93F3F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -115,9 +107,6 @@
 			);
 			dependencies = (
 				8B350D8D2E27B84200D93F3F /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				8B350D892E27B84200D93F3F /* CustomWorkoutCreatorTests */,
 			);
 			name = CustomWorkoutCreatorTests;
 			packageProductDependencies = (

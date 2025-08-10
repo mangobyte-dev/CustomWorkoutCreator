@@ -1,39 +1,22 @@
-//
-//  ContentView.swift
-//  CustomWorkoutCreator
-//
-//  Created by Developer on 16/07/2025.
-//
-
 import SwiftUI
-import SwiftData
 
 struct ContentView: View {
     var body: some View {
-        TabView {
-            HomeView()
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
-            
-            WorkoutsView()
-                .tabItem {
-                    Label("Workouts", systemImage: "figure.run")
-                }
-            
-            ExerciseLibraryView()
-                .tabItem {
-                    Label("Exercise Library", systemImage: "dumbbell")
-                }
-            
-            SettingsView()
-                .tabItem {
-                    Label("Settings", systemImage: "gearshape.fill")
-                }
+        VStack {
+            Image(systemName: "figure.strengthtraining.traditional")
+                .imageScale(.large)
+                .foregroundStyle(.tint)
+            Text("Clean Slate")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            Text("Ready to rebuild with better foundations")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
+        .padding()
     }
 }
 
-#Preview(traits: .sampleData) {
+#Preview {
     ContentView()
 }
